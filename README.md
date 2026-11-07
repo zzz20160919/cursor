@@ -13,4 +13,4 @@
 
 ## HLZ Polymarket cross-section
 
-Step 1 is the daily universe table only. Run notes: `scripts/strategy/hlz_cross_section/README.md`.
+Step 1 is the paper-sample contract pool (cumulative volume, scheduled life, opening date). Run notes: `scripts/strategy/hlz_cross_section/README.md`.

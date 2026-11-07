@@ -8,7 +8,12 @@ secrets.env
 *.sqlite
 *.db
 logs/
-outputs/
+outputs/**
+!outputs/strategy/
+!outputs/strategy/hlz_cross_section/
+!outputs/strategy/hlz_cross_section/paper_sample_markets.csv
+!outputs/strategy/hlz_cross_section/paper_sample_meta.json
+!outputs/strategy/hlz_cross_section/SUMMARY.md
 backups/
 snapshots/
 data/market_data/
