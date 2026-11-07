@@ -14,6 +14,8 @@ outputs/**
 !outputs/strategy/hlz_cross_section/paper_sample_markets.csv
 !outputs/strategy/hlz_cross_section/paper_sample_meta.json
 !outputs/strategy/hlz_cross_section/SUMMARY.md
+!outputs/strategy/hlz_cross_section/top50_by_volume.csv
+!outputs/strategy/hlz_cross_section/open_markets_head200.csv
 backups/
 snapshots/
 data/market_data/
