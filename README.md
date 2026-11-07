@@ -10,3 +10,7 @@
 - 为策略迁移做准备
 
 当前不做实盘交易。
+
+## HLZ Polymarket cross-section
+
+Step 1 is the daily universe table only. Run notes: `scripts/strategy/hlz_cross_section/README.md`.
