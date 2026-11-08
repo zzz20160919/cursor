@@ -73,7 +73,7 @@ Those can be built later as a separate tradable-day table. They are not this fil
 
 An earlier run attached Data API `/v2/oi` after 4:00 p.m. formation. Those ranks and weights are not valid. The current command does not read that snapshot.
 
-Appendix A.3 takes fills from `TimeSeventeen/Polymarket-v1` and open interest from CTF lifecycle events. `download_pit.sh` fetches that public dataset. `build_factors.py` then keeps a Step 1 contract, open or already settled, only when a real fill (not a CLOB price-history point) is inside two hours before 4:00 p.m. Eastern, another fill falls on one of the previous seven Eastern dates, and raw complete-set open interest from splits minus merges minus redemptions is positive at or before formation. `p_event` is the reference-outcome price, so the NO leg is not a second contract. Settlement uses `CTF/resolutions.parquet` only when the resolution block is at or before the next 4:00 p.m.
+Appendix A.3 names Dome hourly prices first. Dome is not available here, so the formation price is the fallback: `vgregoire/polymarket-users` hourly OHLCV `close` (last trade in the hour). There is no quote midpoint, so LOR is the change in logit of that close. A bar is used only when the hour ends at or before 4:00 p.m. Eastern and the bar opened no more than two hours earlier. Open interest is still the TimeSeventeen CTF split/merge/redemption replay. Settlement is still the CTF resolution. `download_pit.sh` fetches both datasets.
 
 ```bash
 bash scripts/strategy/hlz_cross_section/download_pit.sh

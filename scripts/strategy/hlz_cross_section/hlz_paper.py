@@ -218,6 +218,39 @@ def replay_open_interest(events: Iterable[dict[str, Any]], asof: int) -> tuple[f
     return total, "ok"
 
 
+def select_hourly_close(
+    bars: Iterable[dict[str, Any]],
+    asof: int,
+    *,
+    max_age: int = FRESH_SECONDS,
+    bar_seconds: int = 3600,
+) -> dict[str, Any] | None:
+    """Latest hourly close whose bar ends at or before ``asof``.
+
+    ``bars`` are vgregoire ``ohlcv_1h`` rows. ``timestamp`` is the bar start.
+    ``close`` is the last trade in that hour. The file has no bid, ask, or
+    midpoint. The trade can sit anywhere in the hour, so the age used for the
+    two-hour rule is ``asof - bar_start`` (the oldest the close could be).
+    """
+    best: dict[str, Any] | None = None
+    for bar in bars:
+        start = bar.get("bar_start")
+        close = bar.get("close")
+        if start is None or close is None:
+            continue
+        if int(bar.get("trade_count") or 0) <= 0:
+            continue
+        start_i = int(start)
+        end_i = start_i + bar_seconds
+        if end_i > asof or asof - start_i > max_age:
+            continue
+        if not 0.0 < float(close) < 1.0:
+            continue
+        if best is None or start_i > int(best["bar_start"]):
+            best = {"bar_start": start_i, "bar_end": end_i, "close": float(close)}
+    return best
+
+
 def last_trade_at_or_before(
     trades: Iterable[dict[str, Any]],
     asof: int,
@@ -339,6 +372,19 @@ def self_test() -> None:
         {"timestamp": asof - 30 * 60, "price": 0.4, "id": "ok"},
         {"timestamp": asof + 60, "price": 0.9, "id": "future"},
     ]
+    hour = 3600
+    chosen_bar = select_hourly_close(
+        [
+            {"bar_start": asof - 3 * hour, "close": 0.2, "trade_count": 4},
+            {"bar_start": asof - hour, "close": 0.4, "trade_count": 2},
+            {"bar_start": asof, "close": 0.9, "trade_count": 1},
+        ],
+        asof,
+    )
+    assert chosen_bar is not None and chosen_bar["close"] == 0.4
+    assert select_hourly_close([{"bar_start": asof - 3 * hour, "close": 0.2, "trade_count": 1}], asof) is None
+    assert select_hourly_close([{"bar_start": asof - hour, "close": 0.4, "trade_count": 0}], asof) is None
+
     chosen = last_trade_at_or_before(trades, asof)
     assert chosen is not None and chosen["id"] == "ok"
     assert last_trade_at_or_before([trades[0]], asof) is None

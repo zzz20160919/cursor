@@ -18,6 +18,7 @@ from hlz_paper import (
     formation_time,
     lor,
     replay_open_interest,
+    select_hourly_close,
     traded_on_preceding_days,
     yes_payout,
 )
@@ -442,7 +443,7 @@ def assemble(
                     "p_form": "" if price is None else f"{price:.6f}",
                     "p_form_obs": "" if obs is None else iso_z(obs),
                     "p_form_age_hours": "" if obs is None else f"{(form - obs) / 3600:.4f}",
-                    "price_source": "" if price is None else "timeseventeen_fill_p_event",
+                    "price_source": "" if price is None else str(row.get("price_kind") or "vgregoire_ohlcv_1h_close"),
                     "traded_prior_7d": "true" if traded else "false",
                     "oi_shares": "" if oi_value is None else f"{oi_value:.6f}",
                     "oi_reason": oi_reason,
@@ -458,3 +459,83 @@ def assemble(
             )
         day += timedelta(days=1)
     return panel, reasons
+
+
+def reference_tokens(con: duckdb.DuckDBPyConnection, predictions: Path) -> dict[str, str]:
+    """Map condition_id to the YES token, or outcome index 0 when the market has no Yes label."""
+    rows = con.execute(
+        """
+        with meta as (
+          select condition_id, try_cast(market_id as bigint) as market_num
+          from fills
+          group by 1, 2
+        ),
+        ranked as (
+          select m.condition_id, p.prediction_id,
+                 row_number() over (
+                   partition by m.condition_id
+                   order by case when lower(p.outcome) = 'yes' then 0 else 1 end, p.outcome_idx
+                 ) as rn
+          from meta m
+          join read_parquet(?) p on p.market_id = m.market_num
+          where lower(p.outcome) = 'yes' or p.outcome_idx = 0
+        )
+        select condition_id, prediction_id from ranked where rn = 1
+        """,
+        [str(predictions)],
+    ).fetchall()
+    return {condition: token for condition, token in rows}
+
+
+def load_hourly_bars(path_glob: list[str], tokens: set[str]) -> dict[str, list[dict[str, Any]]]:
+    if not tokens or not path_glob:
+        return {}
+    con = duckdb.connect()
+    con.execute("create table want(prediction_id varchar)")
+    con.executemany("insert into want values (?)", [(token,) for token in tokens])
+    rows = con.execute(
+        """
+        select prediction_id, epoch(cast(timestamp as timestamptz))::bigint as bar_start, close, trade_count
+        from read_parquet(?)
+        where prediction_id in (select prediction_id from want)
+          and trade_count > 0
+          and close > 0 and close < 1
+        order by prediction_id, bar_start
+        """,
+        [path_glob],
+    ).fetchall()
+    out: dict[str, list[dict[str, Any]]] = {}
+    for prediction_id, bar_start, close, trade_count in rows:
+        out.setdefault(prediction_id, []).append(
+            {"bar_start": int(bar_start), "close": float(close), "trade_count": int(trade_count)}
+        )
+    return out
+
+
+def apply_hourly_prices(
+    marks: list[dict[str, Any]],
+    bars_by_token: dict[str, list[dict[str, Any]]],
+    token_of_condition: dict[str, str],
+) -> dict[str, set[date]]:
+    """Replace fill prices with the hourly close. Also return Eastern trade dates."""
+    from zoneinfo import ZoneInfo
+
+    eastern = ZoneInfo("America/New_York")
+    trade_days: dict[str, set[date]] = {}
+    for condition, token in token_of_condition.items():
+        days = set()
+        for bar in bars_by_token.get(token, []):
+            days.add(datetime.fromtimestamp(int(bar["bar_start"]), tz=eastern).date())
+        trade_days[condition] = days
+    for row in marks:
+        token = token_of_condition.get(row["condition_id"])
+        chosen = None if token is None else select_hourly_close(bars_by_token.get(token, []), int(row["epoch"]))
+        if chosen is None:
+            row["ts"] = None
+            row["price"] = None
+            row["price_kind"] = ""
+        else:
+            row["ts"] = int(chosen["bar_start"])
+            row["price"] = float(chosen["close"])
+            row["price_kind"] = "vgregoire_ohlcv_1h_close"
+    return trade_days

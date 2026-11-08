@@ -1,8 +1,8 @@
 characteristic,n_dates,mean_low_cents,mean_middle_cents,mean_high_cents,mean_high_minus_low_cents,scope
-yesmv,7,-1.768507,1.507946,-0.668595,1.099912,verified_pilot_not_full_sample
-lor_1,7,-0.838633,-0.286171,1.908189,2.746823,verified_pilot_not_full_sample
-lor_2,7,-1.291795,0.289251,1.415825,2.707621,verified_pilot_not_full_sample
-lor_3,7,-1.790363,0.262200,1.812003,3.602366,verified_pilot_not_full_sample
-lor_4,6,-2.082584,0.343340,2.066771,4.149355,verified_pilot_not_full_sample
-lor_5,7,-0.839465,0.373755,0.811270,1.650735,verified_pilot_not_full_sample
-lor_6,6,-0.985055,0.431855,0.946568,1.931623,verified_pilot_not_full_sample
+yesmv,7,-1.862783,1.558631,-0.798330,1.064453,verified_pilot_not_full_sample
+lor_1,6,-1.047411,-0.409931,2.330799,3.378210,verified_pilot_not_full_sample
+lor_2,7,-1.393162,0.258017,1.467112,2.860274,verified_pilot_not_full_sample
+lor_3,7,-1.875338,0.255161,1.817328,3.692667,verified_pilot_not_full_sample
+lor_4,6,-1.631212,0.370440,2.130411,3.761623,verified_pilot_not_full_sample
+lor_5,7,-0.849775,0.319254,0.806533,1.656308,verified_pilot_not_full_sample
+lor_6,6,-1.016325,0.369670,0.935769,1.952094,verified_pilot_not_full_sample

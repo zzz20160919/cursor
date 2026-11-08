@@ -42,4 +42,30 @@ for day in $days; do
   fetch "daily_aligned/${day}.parquet" || echo "missing daily_aligned/${day}"
   fetch "daily_aligned_multi/${day}.parquet" || echo "missing daily_aligned_multi/${day}"
 done
+VG="outputs/strategy/hlz_cross_section/cache/step2/vgregoire"
+VGBASE="https://huggingface.co/datasets/vgregoire/polymarket-users/resolve/main"
+mkdir -p "$VG/ohlcv_1h"
+if [[ ! -s "$VG/predictions.parquet" ]]; then
+  echo "GET predictions.parquet"
+  curl -fL --retry 5 --retry-delay 3 -o "$VG/predictions.parquet" "$VGBASE/predictions.parquet"
+fi
+if [[ ! -s "$VG/markets.parquet" ]]; then
+  echo "GET markets.parquet"
+  curl -fL --retry 5 --retry-delay 3 -o "$VG/markets.parquet" "$VGBASE/markets.parquet"
+fi
+for day in $days; do
+  year=${day:0:4}
+  month=${day:5:2}
+  dom=${day:8:2}
+  dest="$VG/ohlcv_1h/${day}.parquet"
+  if [[ -s "$dest" ]]; then
+    echo "have ohlcv_1h/${day}"
+    continue
+  fi
+  echo "GET ohlcv_1h/${day}"
+  curl -fL --retry 5 --retry-delay 3 -o "$dest" \
+    "$VGBASE/ohlcv_1h/year=${year}/month=${month}/day=${dom}/data.parquet" \
+    || echo "missing ohlcv_1h/${day}"
+done
+
 echo DOWNLOAD_OK

@@ -558,7 +558,10 @@ def render_summary(meta: dict[str, Any]) -> str:
             "This file is a **pilot**, not the full Polymarket sample in Appendix A.3.",
             "",
             f"Formation window: {meta['start_date']} through {meta['end_date']}, 4:00 p.m. America/New_York.",
-            f"Step 1 contracts with at least one TimeSeventeen fill in the loaded days: {meta['n_conditions']}.",
+            f"Step 1 contracts in this pilot: {meta['n_conditions']}. "
+            f"Of those, {meta.get('n_conditions_with_hourly_price', 0)} have at least one usable hourly close at a 4:00 p.m. slot.",
+            "",
+            "价格来源是论文备用的 vgregoire 小时 OHLCV 的 `close`（该小时最后一笔成交）。没有买卖报价中点，LOR 只用这个收盘价的 logit。",
             f"Factor rows: {meta['n_factor_rows']}. Portfolio-sample rows: {meta['n_portfolio_rows']}.",
             f"Mean High−Low YESMV: {line('yesmv')}.",
             f"Mean High−Low LOR(1): {line('lor_1')}.",
@@ -590,13 +593,14 @@ def render_summary(meta: dict[str, Any]) -> str:
             "",
             "## Interfaces actually used",
             "",
-            "- Trades: `daily_aligned/` and `daily_aligned_multi/` from `TimeSeventeen/Polymarket-v1` (CC-BY-4.0). "
-            "Each row is a cleaned `OrderFilled` with `block_timestamp` in Unix seconds. Relayers are already removed. "
-            "`p_event` is the outcome_seq=1 probability: it equals the fill price on seq 1 and `1 - price` on seq 2. "
-            "Checked on 2024-11-05: seq 1 is the reference leg (Yes, or the first named outcome); seq 2 is the complement.",
+            "- Price: `vgregoire/polymarket-users` `ohlcv_1h` (the appendix A.3 fallback; Dome returned HTTP 503 and is not used). "
+            "`timestamp` is the UTC start of the hour. `close` is the last trade in that hour. There is no bid, ask, or midpoint, "
+            "so LOR uses logit of that close only. The bar counts only if it ends at or before 4:00 p.m. Eastern and the bar start "
+            "is no more than two hours earlier, because the close can be as old as the start of the hour. "
+            "The token is the Yes outcome when `predictions.outcome` is Yes, otherwise outcome index 0. The No token is not a second contract.",
             "- Open interest: `CTF/splits.parquet`, `merges.parquet`, and `redemptions.parquet`. "
             "`usdc_amount` is the dataset's USDC.e collateral notional. On Polymarket, one unit of that collateral mints one complete set, so the net is the raw complete-set count. "
-            "Only root positions (`parent_collection_id` all zeros), collateral USDC.e or native USDC, and partition `{1,2}` enter the sum. "
+            "Only root positions (`parent_collection_id` all zeros), collateral USDC.e, native USDC, or the neg-risk wrapper `0x3a3b…002e2`, and partition `{1,2}` enter the sum. "
             "Split adds, merge and redemption subtract. The block number is parsed from `chainId_blockNumber_logIndex` because these tables have no timestamp column. "
             "Block time and hash come from Polygon `eth_getBlockByNumber` on `polygon-bor-rpc.publicnode.com`. A changed hash aborts the run.",
             "- Settlement: `CTF/resolutions.parquet` `payout_numerators`. `['1','0']` pays 1 on the reference outcome and `['0','1']` pays 0. "
@@ -608,8 +612,8 @@ def render_summary(meta: dict[str, Any]) -> str:
             "",
             "## Not used",
             "",
-            "Current `/v2/oi`, Gamma `openInterest`, cumulative volume, liquidity, CLOB `prices-history` as a trade, and Dome. "
-            "A price-history point is not counted as a trade. Quote midpoints are unavailable in TimeSeventeen, so a formation with no fill inside two hours is missing rather than filled.",
+            "Current `/v2/oi`, Gamma `openInterest`, cumulative volume, liquidity, CLOB `prices-history`, and Dome. "
+            "A formation with no hourly bar inside the two-hour window is missing. It is not filled with a quote midpoint, because this OHLCV file does not have one.",
             "",
             "## Coverage",
             "",
@@ -642,7 +646,17 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
-    from pit_build import assemble, connect, formation_frame, net_blocks, resolution_rows, timed_nets, trade_dates
+    from pit_build import (
+        apply_hourly_prices,
+        assemble,
+        connect,
+        formation_frame,
+        load_hourly_bars,
+        net_blocks,
+        reference_tokens,
+        resolution_rows,
+        timed_nets,
+    )
 
     start = date.fromisoformat(args.start_date)
     end = date.fromisoformat(args.end_date)
@@ -656,7 +670,21 @@ def run(args: argparse.Namespace) -> int:
     n_conditions = con.execute("select count(*) from picked").fetchone()[0]
     print(f"pilot fills {n_fills} conditions {n_conditions}", flush=True)
     marks = formation_frame(con, start, end)
-    days = trade_dates(con)
+    predictions = args.pit_dir.parent / "vgregoire" / "predictions.parquet"
+    hour_dir = args.pit_dir.parent / "vgregoire" / "ohlcv_1h"
+    hour_files = sorted(str(path) for path in hour_dir.glob("*.parquet"))
+    if not predictions.is_file() or not hour_files:
+        write_blocker(args.summary, [predictions, hour_dir], args.pit_dir)
+        print("missing vgregoire hourly OHLCV; wrote", args.summary, flush=True)
+        return 2
+    token_of = reference_tokens(con, predictions)
+    bars = load_hourly_bars(hour_files, set(token_of.values()))
+    days = apply_hourly_prices(marks, bars, token_of)
+    priced = {row["condition_id"] for row in marks if row.get("price") is not None and row["day"] >= start.isoformat() and row["day"] <= end.isoformat()}
+    print(
+        f"hourly tokens {len(token_of)}/{n_conditions} conditions with a fresh 4pm close on at least one pilot day {len(priced)}",
+        flush=True,
+    )
     nets = net_blocks(con, args.pit_dir)
     print(f"ctf net blocks {len(nets)}", flush=True)
     resolutions = resolution_rows(con, args.pit_dir)
@@ -674,6 +702,8 @@ def run(args: argparse.Namespace) -> int:
         "end_date": end.isoformat(),
         "n_fills": int(n_fills),
         "n_conditions": int(n_conditions),
+        "price_source": "vgregoire_ohlcv_1h_close",
+        "n_conditions_with_hourly_price": len(priced),
         "max_conditions": args.max_conditions,
         "block_time_max_abs_error_seconds": max_error,
         "n_factor_rows": len(panel),
