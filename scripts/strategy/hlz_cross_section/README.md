@@ -71,27 +71,14 @@ Those can be built later as a separate tradable-day table. They are not this fil
 
 ## Step 2: YESMV and log odds ratio
 
-`build_factors.py` reads `paper_sample_markets.csv` and builds the paper's formation panel. It does not re-apply the old 7-day average-volume, price-band, one-market-per-event, or cash-day rules.
+An earlier run attached Data API `/v2/oi` after 4:00 p.m. formation. Those ranks and weights are not valid. The current command does not read that snapshot.
+
+Appendix A.3 takes fills from `TimeSeventeen/Polymarket-v1` and open interest from CTF lifecycle events. `download_pit.sh` fetches that public dataset. `build_factors.py` then keeps a Step 1 contract, open or already settled, only when a real fill (not a CLOB price-history point) is inside two hours before 4:00 p.m. Eastern, another fill falls on one of the previous seven Eastern dates, and raw complete-set open interest from splits minus merges minus redemptions is positive at or before formation. `p_event` is the reference-outcome price, so the NO leg is not a second contract. Settlement uses `CTF/resolutions.parquet` only when the resolution block is at or before the next 4:00 p.m.
 
 ```bash
-python3 scripts/strategy/hlz_cross_section/build_factors.py --self-test
-python3 scripts/strategy/hlz_cross_section/build_factors.py --start-date 2026-11-01 --end-date 2026-11-06
+bash scripts/strategy/hlz_cross_section/download_pit.sh
+python3 scripts/strategy/hlz_cross_section/hlz_paper.py
+python3 scripts/strategy/hlz_cross_section/build_factors.py
 ```
 
-Formation is 4:00 p.m. America/New_York, including daylight saving time. The formation price is the latest CLOB `prices-history` point (`fidelity=60`) at or before that time. Lookbacks do not use a later print. The holding-period endpoint is the recorded YES settlement if Gamma `closedTime` falls at or before the next 4:00 p.m. Eastern, and otherwise that next 4:00 p.m. price.
-
-Portfolio rows also require the price point to be at most two hours old and at least one history point on one of the preceding seven Eastern calendar dates. `YESMV = P^form × oi_shares`. `LOR(h) = logit(P^form_t) − logit(P^form_{t−h})` for h = 1..6. Inside each date–category cell the characteristic is winsorized at the 1st and 99th percentiles and split at the 30th and 70th. Contract price changes are weighted by the open-interest share proxy. Category legs are aggregated with presort category open interest on the matched set of categories that can form Low, Middle, and High.
-
-Open interest is the blocker. Gamma and CLOB have no 4:00 p.m. open-interest history. The paper's Polymarket appendix rebuilds that path from chain events. Data API `GET /v2/oi` is a current priced-gross USDC snapshot. The script attaches it only to the latest formation date whose next 4:00 p.m. price is already observable, and it does not copy the snapshot onto earlier dates. `oi_shares` divides that USDC figure by `P^form + (1 − P^form)`. The numbers for the checked-in window are in `outputs/strategy/hlz_cross_section/STEP2_SUMMARY.md`.
-
-| File | Contents |
-| --- | --- |
-| `factor_daily.csv` | One row per contract-formation day |
-| `portfolio_spreads.csv` | Mean Low, Middle, High, and High−Low in cents |
-| `portfolio_spreads_daily.csv` | The same spreads on each formation date that clears the OI rule |
-| `step2_meta.json` | Window, lag, and the spread table |
-| `STEP2_SUMMARY.md` | Paper quotes, the Polymarket mapping, and this run |
-
-The default `--closed-mode open` keeps the CLOB pull to Step 1 contracts that were open at the universe snapshot and have a YES token. `--closed-mode all` also reads closed contracts. Price history is cached under `outputs/strategy/hlz_cross_section/cache/step2/`.
-
-The checked-in window is 2026-11-01 through 2026-11-06 for 5,364 open YES contracts (30,686 factor rows). Open interest is attached only on 2026-11-06, 30.31 hours after that 4:00 p.m. Eastern mark. On that one date the High−Low spread is −0.2415 cents for YESMV and −0.3936 cents for LOR(1). There is no Newey–West t-statistic, because the OI snapshot does not support a second date.
+The checked-in result is a pilot for 2024-10-30 through 2024-11-05, capped at 25 Step 1 conditions that actually traded in that window. It is not the appendix's full 2022–2026 sample. Counts and the remaining differences are in `outputs/strategy/hlz_cross_section/STEP2_SUMMARY.md`. The large parquet cache stays untracked.

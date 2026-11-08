@@ -1,8 +1,8 @@
-characteristic,n_dates,mean_low_cents,mean_middle_cents,mean_high_cents,mean_high_minus_low_cents,newey_west_lags,t_newey_west,mean_categories,mean_contracts
-yesmv,1,-0.025826,0.000634,-0.267345,-0.241519,,,33.0000,4627.0000
-lor_1,1,-0.023542,0.032521,-0.417184,-0.393642,,,25.0000,3694.0000
-lor_2,1,-0.020863,-0.019857,-0.515737,-0.494874,,,28.0000,4569.0000
-lor_3,1,0.115637,-0.210138,-0.548367,-0.664004,,,30.0000,4569.0000
-lor_4,1,0.084443,-0.147269,-0.681077,-0.765519,,,30.0000,4546.0000
-lor_5,1,0.089369,-0.333014,-0.430665,-0.520034,,,30.0000,4506.0000
-lor_6,1,-0.027597,-0.089966,-0.624121,-0.596524,,,31.0000,4441.0000
+characteristic,n_dates,mean_low_cents,mean_middle_cents,mean_high_cents,mean_high_minus_low_cents,scope
+yesmv,7,-1.768507,1.507946,-0.668595,1.099912,verified_pilot_not_full_sample
+lor_1,7,-0.838633,-0.286171,1.908189,2.746823,verified_pilot_not_full_sample
+lor_2,7,-1.291795,0.289251,1.415825,2.707621,verified_pilot_not_full_sample
+lor_3,7,-1.790363,0.262200,1.812003,3.602366,verified_pilot_not_full_sample
+lor_4,6,-2.082584,0.343340,2.066771,4.149355,verified_pilot_not_full_sample
+lor_5,7,-0.839465,0.373755,0.811270,1.650735,verified_pilot_not_full_sample
+lor_6,6,-0.985055,0.431855,0.946568,1.931623,verified_pilot_not_full_sample

@@ -1,99 +1,57 @@
-# HLZ Step 2 / YESMV and log odds ratio
+# HLZ Step 2 strict pilot
 
-Window / 窗口: **2026-11-01** through **2026-11-06** (formation dates, 4:00 p.m. Eastern).
-OI anchor date / 使用公开 OI 快照的形成日: **2026-11-06**.
-OI snapshot taken / 快照时间: 2026-11-08T03:18:32Z.
-Hours from that formation to the snapshot / 形成时点到快照的小时数: 30.31.
+The Data API `/v2/oi` snapshot used in the earlier Step 2 run is **invalid for inference**. It was observed after 4:00 p.m. Eastern formation, so those YESMV ranks and open-interest weights are not the paper's.
 
-## Paper definitions / 论文定义
+This file is a **pilot**, not the full Polymarket sample in Appendix A.3.
 
-Formation, from the paper:
+Formation window: 2024-10-30 through 2024-11-05, 4:00 p.m. America/New_York.
+Step 1 contracts with at least one TimeSeventeen fill in the loaded days: 25.
+Factor rows: 160. Portfolio-sample rows: 154.
+Mean High−Low YESMV: 1.0999 cents over 7 verified date(s).
+Mean High−Low LOR(1): 2.7468 cents over 7 verified date(s).
 
-> We set a common formation time of 4:00 p.m. Eastern Time and account for daylight saving time. The formation price is the most recent valid hourly observation at or before that time. We use its closing transaction price when available and the midpoint of a valid two-sided quote otherwise. All lookbacks end at the formation time, so no post-formation observation enters a characteristic.
+## What the paper says
 
-Portfolio sample, from the paper:
+Section 3.2 (PDF page 7): formation is 4:00 p.m. Eastern, daylight-saving aware. The price is the most recent valid hourly observation at or before that time: the closing trade when one exists, otherwise the midpoint of a valid two-sided quote. Lookbacks end at formation. The portfolio sample also requires the price source to be no more than two hours old and a trade on at least one of the preceding seven calendar days. Open interest is the latest observation at or before formation and is never filled from the future. The two-hour limit does not apply to that stock variable.
 
-> The portfolio sample imposes two further requirements. The price source must be no more than two hours old, and the contract must have traded on at least one day during the preceding seven calendar days. These restrictions limit measurement error from stale prices and prolonged nontrading. Open interest is the latest observation available at or before formation and is never filled backward from future data. The two-hour limit applies only to execution prices, not to this stock variable.
+Section 3.3 equations (1) and (2), PDF page 8: `YESMV = P^form × OI` and `R^pp = P^end − P^form`. The holding period ends at settlement or at 4:00 p.m. the next Eastern day, whichever is first.
 
-Equations:
+Section 3.4 equations (3) and (4), PDF page 9: within a category, weight by formation-time raw open interest; across categories, use the matched set and presort category open interest.
 
-> (1) YESMV_{i,t} = P^form_{i,t} × OI_{i,t}
+Section 4.1 equation (5), PDF page 10: `LOR(h) = logit(P^form_t) − logit(P^form_{t−h})` for h = 1..6, with characteristics winsorized at the 1st and 99th percentiles of the date–category cell and split at the 30th and 70th.
 
-> (2) R^{pp}_{i,t+1} = P^end_{i,t+1} − P^form_{i,t}
+Appendix A.3, PDF page 70: Polymarket definitions and settlements come from official metadata; transactions come from `TimeSeventeen/Polymarket-v1`; Dome hourly prices are primary and `vgregoire/polymarket-users` hourly OHLCV is the fallback; 4:00 p.m. open interest is reconstructed from Polygon CTF and negative-risk lifecycle events via Dune and TimeSeventeen. The appendix sample uses cumulative volume above 2,000, life of at least two days, and a start date no later than April 28, 2026, keeps one outcome per condition (typically YES), and includes standard and negative-risk binaries. It then requires a fresh price, an active contract, positive raw open interest, a trade in the prior seven calendar days, and a next price change.
 
-> For each contract-day, the holding period ends at settlement or at 4:00 p.m. on the following Eastern calendar day, whichever occurs first.
+Table IA.15 notes, PDF page 66: sort within formation date and official category at the 30th and 70th percentiles, weight by raw open interest, then aggregate with presort category open interest.
 
-> (5) LOR_{i,t}(h) = logit(P^form_{i,t}) − logit(P^form_{i,t−h}), logit(p) = log[p/(1−p)], h = 1,...,6
+## Interfaces actually used
 
-> We winsorize each continuous characteristic at the first and 99th percentiles of its formation-date–category cross-section and assign contracts to Low, Middle, and High portfolios using the 30th and 70th percentiles.
+- Trades: `daily_aligned/` and `daily_aligned_multi/` from `TimeSeventeen/Polymarket-v1` (CC-BY-4.0). Each row is a cleaned `OrderFilled` with `block_timestamp` in Unix seconds. Relayers are already removed. `p_event` is the outcome_seq=1 probability: it equals the fill price on seq 1 and `1 - price` on seq 2. Checked on 2024-11-05: seq 1 is the reference leg (Yes, or the first named outcome); seq 2 is the complement.
+- Open interest: `CTF/splits.parquet`, `merges.parquet`, and `redemptions.parquet`. `usdc_amount` is the dataset's USDC.e collateral notional. On Polymarket, one unit of that collateral mints one complete set, so the net is the raw complete-set count. Only root positions (`parent_collection_id` all zeros), collateral USDC.e or native USDC, and partition `{1,2}` enter the sum. Split adds, merge and redemption subtract. The block number is parsed from `chainId_blockNumber_logIndex` because these tables have no timestamp column. Block time and hash come from Polygon `eth_getBlockByNumber` on `polygon-bor-rpc.publicnode.com`. A changed hash aborts the run.
+- Settlement: `CTF/resolutions.parquet` `payout_numerators`. `['1','0']` pays 1 on the reference outcome and `['0','1']` pays 0. The resolution counts only when its block time is at or before the next 4:00 p.m. `resolved_at` on the trade file is not used; it is frozen metadata and can post-date the fill.
+- Universe: every Step 1 contract, open or settled, whose slug matches `market_slug` in the loaded days. Step 1's 10,000 volume screen is stricter than the appendix's 2,000 cutoff. This pilot does not rebuild the appendix's 3,507,194 contract-days.
+- Category: `category_refined` (Politics, Sports, Crypto, and the other cleaned buckets). The raw `category` field is a fine label such as Trump or Mentions. The paper says official category and does not name this column. Sorts use the refined field and keep the raw label beside it.
 
-Within a category, contract price changes are weighted by formation-time raw open interest (Eq. 3). Category portfolios are aggregated with the matched category set and presort category open interest (Eq. 4). High−Low is reported in cents per YES claim. Newey–West uses seven lags when at least two dates exist.
+## Not used
 
-## Polymarket mapping / 映射
+Current `/v2/oi`, Gamma `openInterest`, cumulative volume, liquidity, CLOB `prices-history` as a trade, and Dome. A price-history point is not counted as a trade. Quote midpoints are unavailable in TimeSeventeen, so a formation with no fill inside two hours is missing rather than filled.
 
-Universe: Step 1 `paper_sample_markets.csv` (cumulative volume ≥ 10,000 USD notional, scheduled life ≥ 2 days, opening date on or before the Step 1 sample end). This run keeps YES-token contracts with `closed_mode=open`. Markets in the run: 5364. The paper's Polymarket appendix uses cumulative volume above 2,000 and a chain-reconstructed open-interest path. This Step 2 file does not replace the Step 1 screen with that 2,000 cutoff.
+## Coverage
 
-Formation price: CLOB `GET /prices-history` for the YES token, `fidelity=60` (about one point per hour). P^form is the latest point at or before 4:00 p.m. America/New_York. The feed has a single price, not a separate closing trade and a two-sided quote, so there is no trade-then-midpoint fallback. The portfolio sample keeps a price only when that point is at most two hours old.
+```
+{
+  "alive_contract_days": 160,
+  "portfolio_sample": 154,
+  "stale_or_boundary_trade": 3,
+  "already_expired": 15,
+  "block_time_max_abs_error_seconds": 38
+}
+```
 
-Traded in the preceding seven Eastern calendar dates: at least one `prices-history` point falls on one of those dates. The feed does not flag a print as a trade, so a carried hourly price can satisfy the screen. That is wider than the paper's transaction test.
-
-Endpoint: recorded YES settlement if Gamma `closedTime` is at or before the next 4:00 p.m. Eastern and the YES outcome price is 0 or 1. Otherwise the next calendar day's 4:00 p.m. price, under the same two-hour rule.
-
-Category: one Gamma tag per contract. A slug in a fixed broad list (sports, politics, crypto, business, and the rest in the script) wins when several tags are present. Otherwise the first tag is the category. This is not Kalshi's official category field.
-
-### Open interest / 未平仓量
-
-The paper's Polymarket appendix says open interest at 4:00 p.m. Eastern is reconstructed from Polygon CTF and negative-risk lifecycle events. Gamma and CLOB do not publish that history. Data API `GET /v2/oi` returns the current priced gross open interest in USDC:
-
-> Σ ((shares − fee_receiver_shares) / 1e6 · outcome_price) across outcomes, with no netting.
-
-It is one snapshot for the whole life of the request, not a value as of 4:00 p.m. on each formation date. Copying it backward would put later position changes into earlier characteristics, which the paper rules out. This run attaches the snapshot only on the latest formation date whose next 4:00 p.m. mark is already in the price history. The snapshot is still after that 4:00 p.m. The lag in hours is above. Share proxy: oi_shares = oi_usdc / (P^form + (1 − P^form)) = oi_usdc, using the complementary NO price because the NO print is not in the YES history. YESMV = P^form × oi_shares. The price is not used by itself as the size measure.
-
-How this can differ from the paper: ranks and weights move if open interest changed between 4:00 p.m. and the snapshot; priced-gross USDC equals the raw contract count only when YES and NO prices sum to one; the High−Low mean is a one-date cross-section when only one formation date receives OI, so it is not the paper's multi-year Newey–West mean.
-
-未平仓量只有当前快照，没有每个形成日 16:00 的历史。快照只挂在最近一个已经能观察到下一交易日 16:00 价格的形成日上，不回填到更早的日期。YESMV 仍是形成价乘以份额代理，而不是单独用价格。
-
-## This run / 本次结果
-
-- Factor rows / 因子行数: 30686
-- Portfolio-sample rows / 进入组合的行数: 4648
-- Formation dates in the panel / 面板中的形成日数: 6
-- Dates with a High−Low portfolio / 能算出多空组合的日期数: 1
-- Mean High−Low YESMV: -0.2415 cents over 1 date(s), Newey-West t = n/a (fewer than two dates)
-- Mean High−Low LOR(1): -0.3936 cents over 1 date(s), Newey-West t = n/a (fewer than two dates)
-
-Cents are R^{pp} times 100. A negative High−Low means the high characteristic has the lower subsequent price change.
-
-### Spreads / 价差（美分）
-
-| Characteristic | Dates | Low | Middle | High | High−Low | NW t |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| yesmv | 1 | -0.0258 | 0.0006 | -0.2673 | -0.2415 |  |
-| lor_1 | 1 | -0.0235 | 0.0325 | -0.4172 | -0.3936 |  |
-| lor_2 | 1 | -0.0209 | -0.0199 | -0.5157 | -0.4949 |  |
-| lor_3 | 1 | 0.1156 | -0.2101 | -0.5484 | -0.6640 |  |
-| lor_4 | 1 | 0.0844 | -0.1473 | -0.6811 | -0.7655 |  |
-| lor_5 | 1 | 0.0894 | -0.3330 | -0.4307 | -0.5200 |  |
-| lor_6 | 1 | -0.0276 | -0.0900 | -0.6241 | -0.5965 |  |
-
-Category counts in the portfolio sample:
-
-- Politics: 1445
-- Sports: 862
-- Crypto: 641
-- Culture: 365
-- Finance: 289
-- Tech: 279
-- Business: 217
-- Geopolitics: 129
-- Science: 69
-- Weather: 60
-- World: 53
-- Fed: 30
-
-Rebuild / 重跑:
+Rebuild:
 
 ```bash
-python3 scripts/strategy/hlz_cross_section/build_factors.py --self-test
-python3 scripts/strategy/hlz_cross_section/build_factors.py --start-date 2026-11-01 --end-date 2026-11-06
+bash scripts/strategy/hlz_cross_section/download_pit.sh
+python3 scripts/strategy/hlz_cross_section/hlz_paper.py
+python3 scripts/strategy/hlz_cross_section/build_factors.py
 ```
