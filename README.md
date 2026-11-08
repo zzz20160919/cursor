@@ -13,4 +13,4 @@
 
 ## HLZ Polymarket cross-section
 
-Step 1 is the paper-sample contract pool (cumulative volume, scheduled life, opening date). Run notes: `scripts/strategy/hlz_cross_section/README.md`.
+Step 1 is the paper-sample contract pool (cumulative volume, scheduled life, opening date). Step 2 is the YESMV and log-odds-ratio panel and the open-interest-weighted High−Low portfolios. Run notes: `scripts/strategy/hlz_cross_section/README.md`.

@@ -1,0 +1,303 @@
+{
+  "generated_at": "2026-11-08T03:18:09Z",
+  "start_date": "2026-11-01",
+  "end_date": "2026-11-06",
+  "closed_mode": "open",
+  "n_markets": 5364,
+  "n_factor_rows": 30686,
+  "n_portfolio_rows": 4648,
+  "n_formation_dates": 6,
+  "n_spread_dates": 1,
+  "oi_anchor_date": "2026-11-06",
+  "oi_observed_at": "2026-11-08T03:18:32Z",
+  "oi_lag_hours": "30.31",
+  "oi_markets": 5148,
+  "spreads": [
+    {
+      "characteristic": "yesmv",
+      "n_dates": 1,
+      "mean_low_cents": "-0.025826",
+      "mean_middle_cents": "0.000634",
+      "mean_high_cents": "-0.267345",
+      "mean_high_minus_low_cents": "-0.241519",
+      "newey_west_lags": "",
+      "t_newey_west": "",
+      "mean_categories": "33.0000",
+      "mean_contracts": "4627.0000"
+    },
+    {
+      "characteristic": "lor_1",
+      "n_dates": 1,
+      "mean_low_cents": "-0.023542",
+      "mean_middle_cents": "0.032521",
+      "mean_high_cents": "-0.417184",
+      "mean_high_minus_low_cents": "-0.393642",
+      "newey_west_lags": "",
+      "t_newey_west": "",
+      "mean_categories": "25.0000",
+      "mean_contracts": "3694.0000"
+    },
+    {
+      "characteristic": "lor_2",
+      "n_dates": 1,
+      "mean_low_cents": "-0.020863",
+      "mean_middle_cents": "-0.019857",
+      "mean_high_cents": "-0.515737",
+      "mean_high_minus_low_cents": "-0.494874",
+      "newey_west_lags": "",
+      "t_newey_west": "",
+      "mean_categories": "28.0000",
+      "mean_contracts": "4569.0000"
+    },
+    {
+      "characteristic": "lor_3",
+      "n_dates": 1,
+      "mean_low_cents": "0.115637",
+      "mean_middle_cents": "-0.210138",
+      "mean_high_cents": "-0.548367",
+      "mean_high_minus_low_cents": "-0.664004",
+      "newey_west_lags": "",
+      "t_newey_west": "",
+      "mean_categories": "30.0000",
+      "mean_contracts": "4569.0000"
+    },
+    {
+      "characteristic": "lor_4",
+      "n_dates": 1,
+      "mean_low_cents": "0.084443",
+      "mean_middle_cents": "-0.147269",
+      "mean_high_cents": "-0.681077",
+      "mean_high_minus_low_cents": "-0.765519",
+      "newey_west_lags": "",
+      "t_newey_west": "",
+      "mean_categories": "30.0000",
+      "mean_contracts": "4546.0000"
+    },
+    {
+      "characteristic": "lor_5",
+      "n_dates": 1,
+      "mean_low_cents": "0.089369",
+      "mean_middle_cents": "-0.333014",
+      "mean_high_cents": "-0.430665",
+      "mean_high_minus_low_cents": "-0.520034",
+      "newey_west_lags": "",
+      "t_newey_west": "",
+      "mean_categories": "30.0000",
+      "mean_contracts": "4506.0000"
+    },
+    {
+      "characteristic": "lor_6",
+      "n_dates": 1,
+      "mean_low_cents": "-0.027597",
+      "mean_middle_cents": "-0.089966",
+      "mean_high_cents": "-0.624121",
+      "mean_high_minus_low_cents": "-0.596524",
+      "newey_west_lags": "",
+      "t_newey_west": "",
+      "mean_categories": "31.0000",
+      "mean_contracts": "4441.0000"
+    }
+  ],
+  "category_counts": [
+    [
+      "Politics",
+      1445
+    ],
+    [
+      "Sports",
+      862
+    ],
+    [
+      "Crypto",
+      641
+    ],
+    [
+      "Culture",
+      365
+    ],
+    [
+      "Finance",
+      289
+    ],
+    [
+      "Tech",
+      279
+    ],
+    [
+      "Business",
+      217
+    ],
+    [
+      "Geopolitics",
+      129
+    ],
+    [
+      "Science",
+      69
+    ],
+    [
+      "Weather",
+      60
+    ],
+    [
+      "World",
+      53
+    ],
+    [
+      "Fed",
+      30
+    ],
+    [
+      "NFL (All)",
+      29
+    ],
+    [
+      "NFL",
+      27
+    ],
+    [
+      "Economy",
+      13
+    ],
+    [
+      "Parcl",
+      13
+    ],
+    [
+      "Inflation",
+      11
+    ],
+    [
+      "CPI",
+      10
+    ],
+    [
+      "China",
+      10
+    ],
+    [
+      "GDP",
+      10
+    ],
+    [
+      "Recurring",
+      10
+    ],
+    [
+      "UK",
+      8
+    ],
+    [
+      "Trump",
+      7
+    ],
+    [
+      "Canada",
+      6
+    ],
+    [
+      "USD",
+      6
+    ],
+    [
+      "unemployment",
+      5
+    ],
+    [
+      "BOE",
+      4
+    ],
+    [
+      "CFB (All)",
+      4
+    ],
+    [
+      "ATP",
+      3
+    ],
+    [
+      "India",
+      3
+    ],
+    [
+      "RBI",
+      3
+    ],
+    [
+      "SNB",
+      3
+    ],
+    [
+      "South Korea",
+      3
+    ],
+    [
+      "Brazil",
+      2
+    ],
+    [
+      "ECB",
+      2
+    ],
+    [
+      "Elections",
+      2
+    ],
+    [
+      "Oil",
+      2
+    ],
+    [
+      "DNC",
+      1
+    ],
+    [
+      "La Liga",
+      1
+    ],
+    [
+      "Macro Indicators",
+      1
+    ],
+    [
+      "PPI",
+      1
+    ],
+    [
+      "Parlays",
+      1
+    ],
+    [
+      "Peace Deal",
+      1
+    ],
+    [
+      "UFC",
+      1
+    ],
+    [
+      "UMich",
+      1
+    ],
+    [
+      "United Nations",
+      1
+    ],
+    [
+      "disease",
+      1
+    ],
+    [
+      "eu",
+      1
+    ],
+    [
+      "technology",
+      1
+    ],
+    [
+      "untagged",
+      1
+    ]
+  ]
+}

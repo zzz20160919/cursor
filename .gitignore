@@ -16,6 +16,11 @@ outputs/**
 !outputs/strategy/hlz_cross_section/SUMMARY.md
 !outputs/strategy/hlz_cross_section/top50_by_volume.csv
 !outputs/strategy/hlz_cross_section/open_markets_head200.csv
+!outputs/strategy/hlz_cross_section/factor_daily.csv
+!outputs/strategy/hlz_cross_section/portfolio_spreads.csv
+!outputs/strategy/hlz_cross_section/portfolio_spreads_daily.csv
+!outputs/strategy/hlz_cross_section/step2_meta.json
+!outputs/strategy/hlz_cross_section/STEP2_SUMMARY.md
 backups/
 snapshots/
 data/market_data/
