@@ -53,13 +53,23 @@ if [[ ! -s "$VG/markets.parquet" ]]; then
   echo "GET markets.parquet"
   curl -fL --retry 5 --retry-delay 3 -o "$VG/markets.parquet" "$VGBASE/markets.parquet"
 fi
-for day in $days; do
+# Pilot window above, then every hourly file the price sample can use.
+# vgregoire hourly bars end 2026-03-29 (2026-03-30 is HTTP 404).
+hourly_days=$(python3 - << 'PY'
+from datetime import date, timedelta
+day = date(2022, 11, 21)
+end = date(2026, 3, 29)
+while day <= end:
+    print(day.strftime("%Y_%m_%d"))
+    day += timedelta(days=1)
+PY
+)
+for day in $hourly_days; do
   year=${day:0:4}
   month=${day:5:2}
   dom=${day:8:2}
   dest="$VG/ohlcv_1h/${day}.parquet"
   if [[ -s "$dest" ]]; then
-    echo "have ohlcv_1h/${day}"
     continue
   fi
   echo "GET ohlcv_1h/${day}"

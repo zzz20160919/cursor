@@ -67,7 +67,7 @@ def rpc_blocks(blocks: list[int], cache_path: Path) -> dict[int, dict[str, Any]]
         )
         delay = 1.0
         body = None
-        for _attempt in range(6):
+        for _attempt in range(8):
             try:
                 with urllib.request.urlopen(request, timeout=60) as response:
                     body = json.loads(response.read().decode())
@@ -75,6 +75,9 @@ def rpc_blocks(blocks: list[int], cache_path: Path) -> dict[int, dict[str, Any]]
             except urllib.error.HTTPError as exc:
                 if exc.code not in {429, 500, 502, 503}:
                     raise
+                time.sleep(delay)
+                delay = min(delay * 2, 20)
+            except (urllib.error.URLError, TimeoutError, OSError):
                 time.sleep(delay)
                 delay = min(delay * 2, 20)
         if body is None:

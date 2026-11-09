@@ -1,65 +1,48 @@
-# HLZ Step 2 strict pilot
+# HLZ Step 2 full sample
 
-The Data API `/v2/oi` snapshot used in the earlier Step 2 run is **invalid for inference**. It was observed after 4:00 p.m. Eastern formation, so those YESMV ranks and open-interest weights are not the paper's.
+价格只用 vgregoire 小时 K 线的 `close`（该小时最后一笔成交），且这根 K 线的开端距美东 16:00 不超过 2 小时。没有 Dome，没有报价中点。
+样本是附录 A.3：Gamma 累计成交额严格大于 2,000 美元名义，观察存续至少 2 天，开始日不晚于 2026-03-29。每个 condition 只保留一个 YES（没有 YES 标签时用 outcome 0）。
 
-This file is a **pilot**, not the full Polymarket sample in Appendix A.3.
+Price sample: 2022-11-21 through 2026-03-29. Hourly files run 2022-11-21 through 2026-03-29. vgregoire has no file for 2026-03-30, so formation dates stop at 2026-03-29. The next-day close for 2026-03-29 does not exist; that date enters the portfolio only when settlement supplies the endpoint.
 
-Formation window: 2024-10-30 through 2024-11-05, 4:00 p.m. America/New_York.
-Step 1 contracts in this pilot: 25. Of those, 25 have at least one usable hourly close at a 4:00 p.m. slot.
+## Universe versus the earlier ≥10,000 screen
 
-价格来源是论文备用的 vgregoire 小时 OHLCV 的 `close`（该小时最后一笔成交）。没有买卖报价中点，LOR 只用这个收盘价的 logit。
-Factor rows: 160. Portfolio-sample rows: 150.
-Mean High−Low YESMV: 1.0645 cents over 7 verified date(s).
-Mean High−Low LOR(1): 3.3782 cents over 6 verified date(s).
-
-## What the paper says
-
-Section 3.2 (PDF page 7): formation is 4:00 p.m. Eastern, daylight-saving aware. The price is the most recent valid hourly observation at or before that time: the closing trade when one exists, otherwise the midpoint of a valid two-sided quote. Lookbacks end at formation. The portfolio sample also requires the price source to be no more than two hours old and a trade on at least one of the preceding seven calendar days. Open interest is the latest observation at or before formation and is never filled from the future. The two-hour limit does not apply to that stock variable.
-
-Section 3.3 equations (1) and (2), PDF page 8: `YESMV = P^form × OI` and `R^pp = P^end − P^form`. The holding period ends at settlement or at 4:00 p.m. the next Eastern day, whichever is first.
-
-Section 3.4 equations (3) and (4), PDF page 9: within a category, weight by formation-time raw open interest; across categories, use the matched set and presort category open interest.
-
-Section 4.1 equation (5), PDF page 10: `LOR(h) = logit(P^form_t) − logit(P^form_{t−h})` for h = 1..6, with characteristics winsorized at the 1st and 99th percentiles of the date–category cell and split at the 30th and 70th.
-
-Appendix A.3, PDF page 70: Polymarket definitions and settlements come from official metadata; transactions come from `TimeSeventeen/Polymarket-v1`; Dome hourly prices are primary and `vgregoire/polymarket-users` hourly OHLCV is the fallback; 4:00 p.m. open interest is reconstructed from Polygon CTF and negative-risk lifecycle events via Dune and TimeSeventeen. The appendix sample uses cumulative volume above 2,000, life of at least two days, and a start date no later than April 28, 2026, keeps one outcome per condition (typically YES), and includes standard and negative-risk binaries. It then requires a fresh price, an active contract, positive raw open interest, a trade in the prior seven calendar days, and a next price change.
-
-Table IA.15 notes, PDF page 66: sort within formation date and official category at the 30th and 70th percentiles, weight by raw open interest, then aggregate with presort category open interest.
-
-## Interfaces actually used
-
-- Price: `vgregoire/polymarket-users` `ohlcv_1h` (the appendix A.3 fallback; Dome returned HTTP 503 and is not used). `timestamp` is the UTC start of the hour. `close` is the last trade in that hour. There is no bid, ask, or midpoint, so LOR uses logit of that close only. The bar counts only if it ends at or before 4:00 p.m. Eastern and the bar start is no more than two hours earlier, because the close can be as old as the start of the hour. The token is the Yes outcome when `predictions.outcome` is Yes, otherwise outcome index 0. The No token is not a second contract.
-- Open interest: `CTF/splits.parquet`, `merges.parquet`, and `redemptions.parquet`. `usdc_amount` is the dataset's USDC.e collateral notional. On Polymarket, one unit of that collateral mints one complete set, so the net is the raw complete-set count. Only root positions (`parent_collection_id` all zeros), collateral USDC.e, native USDC, or the neg-risk wrapper `0x3a3b…002e2`, and partition `{1,2}` enter the sum. Split adds, merge and redemption subtract. The block number is parsed from `chainId_blockNumber_logIndex` because these tables have no timestamp column. Block time and hash come from Polygon `eth_getBlockByNumber` on `polygon-bor-rpc.publicnode.com`. A changed hash aborts the run.
-- Settlement: `CTF/resolutions.parquet` `payout_numerators`. `['1','0']` pays 1 on the reference outcome and `['0','1']` pays 0. The resolution counts only when its block time is at or before the next 4:00 p.m. `resolved_at` on the trade file is not used; it is frozen metadata and can post-date the fill.
-- Universe: every Step 1 contract, open or settled, whose slug matches `market_slug` in the loaded days. Step 1's 10,000 volume screen is stricter than the appendix's 2,000 cutoff. This pilot does not rebuild the appendix's 3,507,194 contract-days.
-- Category: `category_refined` (Politics, Sports, Crypto, and the other cleaned buckets). The raw `category` field is a fine label such as Trump or Mentions. The paper says official category and does not name this column. Sorts use the refined field and keep the raw label beside it.
-
-## Not used
-
-Current `/v2/oi`, Gamma `openInterest`, cumulative volume, liquidity, CLOB `prices-history`, and Dome. A formation with no hourly bar inside the two-hour window is missing. It is not filled with a quote midpoint, because this OHLCV file does not have one.
-
-## Hourly coverage / 小时线覆盖
-
-All 25 pilot contracts have at least one usable 4:00 p.m. close. Six contract-days have no bar inside the two-hour window: Tim Walz on 2024-10-30, 2024-11-01, and 2024-11-02; Dinamo Zagreb and Red Star Belgrade on 2024-11-01; Lille on 2024-11-03. Those slots stay missing. They are not filled with a midpoint.
-
-25 个合约都至少有一个可用的下午 4 点收盘价。上面 6 个合约日没有落在两小时窗口内的小时线，保持缺失。
+Earlier Step 1 file (volume ≥ 10,000, scheduled life, sample end 2026-11-07): 277481 contracts, 128063 events (5862 open, 271619 closed).
+This A.3 file (volume > 2,000, observed life, sample end 2026-03-29): 178408 contracts, 72497 events (2482 open, 175926 closed). Volume stats: min 2000.128, median 21722.848375, mean 353685.2227819832.
+旧的 ≥10,000 文件保留作对照，不是这一次的样本。
 
 ## Coverage
 
-```
-{
-  "alive_contract_days": 160,
-  "portfolio_sample": 150,
-  "no_trade_at_or_before_formation": 6,
-  "already_expired": 15,
-  "block_time_max_abs_error_seconds": 38
-}
-```
+Universe conditions with a condition id: 178408. With a YES or outcome-0 token in vgregoire predictions: 178025.
+Alive contract-days (open, not yet closed, expiry still ahead): 3882837.
+Contract-days with a ≤2h hourly close: 737834 across 124433 conditions.
+Those closes that are also active at formation: 679124.
+Active closes with a CTF open-interest observation: 679124. With positive raw OI: 678884.
+Portfolio sample (active, positive OI, a trade on one of the prior 7 Eastern days, a category, and a next-period price): 379371.
+Harris 2024-10-30 replay check: OI 118579214.28 (relative gap 0.000000 versus the earlier 25-contract run).
 
-Rebuild:
+## High minus Low
 
-```bash
-bash scripts/strategy/hlz_cross_section/download_pit.sh
-python3 scripts/strategy/hlz_cross_section/hlz_paper.py
-python3 scripts/strategy/hlz_cross_section/build_factors.py
-```
+Sorts are inside a date and a vgregoire category, 1st/99th winsorize, 30th/70th legs, raw-OI weights, then category-OI weights. Units are cents of price change.
+YESMV: 0.2089 cents over 884 dates.
+LOR(1): -0.0861 cents over 755 dates.
+LOR(2): -0.2288 cents over 729 dates.
+LOR(3): -0.0053 cents over 730 dates.
+LOR(4): 0.0903 cents over 722 dates.
+LOR(5): 0.0107 cents over 717 dates.
+LOR(6): -0.0110 cents over 710 dates.
+这些是本仓库按上述数据截止日算出的价差，不是论文表 IA.15 的复述。
+
+## Remaining Appendix A.3 gaps
+
+- Dome hourly prices are not available. There is no bid, ask, or quote midpoint. LOR uses the hourly close only.
+- The trade's exact second inside the hour is not in the file. Age is measured from the bar open, which is the older bound.
+- Hourly bars end 2026-03-29. The paper's TimeSeventeen archive continues to 2026-04-28. Seven days in late 2022 have no hourly file (2022-11-24, 2022-11-25, 2022-11-26, 2022-11-27, 2022-12-04, 2022-12-05, 2022-12-10).
+- Category is `vgregoire/polymarket-users` `markets.category`. The paper says official category and does not name the column. TimeSeventeen `category_refined` is downloaded only for the 15-day pilot window, so it is not the full-sample category.
+- Open interest counts root complete-set splits, merges, and redemptions whose collateral is USDC.e, native USDC, or the neg-risk wrapper `0x3a3bd7bb9528e159577f7c2e685cc81a765002e2`. One unit of collateral is one complete set. Lifecycle rows that never appear in those CTF tables are absent, not filled in.
+- Block time is linear between anchors 500 blocks apart. Blocks within 15 minutes of a 4:00 p.m. cutoff are read exactly. The largest interpolation error on those exact blocks in this run is 245 seconds. The run aborts if that error can reach the cutoff (half of the 15-minute window).
+- Cached Gamma bands at volume ≥ 10,000 did not store `closedTime`. Those rows were backfilled. A market that still has no `closedTime` uses expiry, capped at the sample-end day, as the observed end.
+- Newey–West standard errors are not computed. Bid–ask and cost-of-arbitrage sorts are not in the Polymarket tables and are not computed here.
+- Step 3 is not started. The withdrawn `/v2/oi` snapshot is not an input.
+
+Factor table: `outputs/strategy/hlz_cross_section/a3_factor_daily.parquet`. Daily spreads: `outputs/strategy/hlz_cross_section/a3_spreads_daily.csv`.

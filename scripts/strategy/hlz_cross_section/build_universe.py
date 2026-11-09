@@ -88,6 +88,10 @@ COLUMNS = (
     "outcomes",
     "yes_token",
     "sample_end_date",
+    "condition_id",
+    "closed_time",
+    "life_mode",
+    "observed_life_days",
 )
 
 # (container, field, label). Start fields outrank createdAt: createdAt can
@@ -289,15 +293,23 @@ def screen_market(
     sample_end: date,
     min_volume: float,
     min_life_days: float,
+    volume_above: bool = False,
+    life_mode: str = "scheduled",
 ) -> Decision:
-    """Apply the paper screens. The first failing rule is the funnel reason."""
+    """Apply the paper screens. The first failing rule is the funnel reason.
+
+    ``volume_above`` makes the floor exclusive (volume must be above the
+    cutoff). Appendix A.3 says "above 2,000". ``life_mode="observed"`` uses
+    the span from the opening timestamp to the earlier of close and the
+    sample end, instead of scheduled expiry minus open.
+    """
     market_id = str(market.get("id") or "").strip()
     if not market_id:
         return Decision("missing_id")
     volume, volume_field = lifetime_volume(market)
     # Numeric threshold matches the paper. The unit does not: Polymarket
     # volume is USD notional, while the paper counts Kalshi contracts.
-    if volume is None or volume < min_volume:
+    if volume is None or (volume <= min_volume if volume_above else volume < min_volume):
         return Decision("below_volume")
     labels = outcome_labels(market)
     if len(labels) != 2:
@@ -312,7 +324,27 @@ def screen_market(
         return Decision("missing_expiry")
     open_dt, open_source = opened
     expiry_dt, expiry_source = expired
-    life_days = (expiry_dt - open_dt).total_seconds() / 86400.0
+    closed_at = parse_dt(market.get("closedTime"))
+    sample_cap = datetime.combine(sample_end, datetime.max.time(), tzinfo=timezone.utc)
+    if life_mode == "observed":
+        if closed_at is not None:
+            observed_end = min(closed_at, sample_cap)
+        else:
+            observed_end = min(expiry_dt, sample_cap)
+        life_days = (observed_end - open_dt).total_seconds() / 86400.0
+    elif life_mode == "scheduled":
+        life_days = (expiry_dt - open_dt).total_seconds() / 86400.0
+    else:
+        raise ValueError(f"unknown life_mode {life_mode}")
+    scheduled_days = (expiry_dt - open_dt).total_seconds() / 86400.0
+    if life_mode == "observed":
+        observed_days = life_days
+    else:
+        if closed_at is not None:
+            observed_end = min(closed_at, sample_cap)
+        else:
+            observed_end = min(expiry_dt, sample_cap)
+        observed_days = (observed_end - open_dt).total_seconds() / 86400.0
     if life_days < min_life_days:
         return Decision("life_below_min")
     if open_dt.date() > sample_end:
@@ -333,7 +365,7 @@ def screen_market(
         "event_title": event_title,
         "cumulative_volume": f"{volume:.6f}",
         "volume_unit": "usd_notional",
-        "scheduled_life_days": f"{life_days:.6f}",
+        "scheduled_life_days": f"{scheduled_days:.6f}",
         "open_date": iso_z(open_dt),
         "expiry": iso_z(expiry_dt),
         "closed": closed_text,
@@ -343,6 +375,10 @@ def screen_market(
         "outcomes": " | ".join(labels),
         "yes_token": yes_token(market, labels),
         "sample_end_date": sample_end.isoformat(),
+        "condition_id": str(market.get("conditionId") or ""),
+        "closed_time": "" if closed_at is None else iso_z(closed_at),
+        "life_mode": life_mode,
+        "observed_life_days": f"{observed_days:.6f}",
     }
     return Decision("selected", row)
 
@@ -433,7 +469,7 @@ def get_json(url: str, limiter: RateLimiter, timeout: int = 45) -> Any:
                 delay = min(delay * 2, 30)
                 continue
             raise last_error from exc
-        except (urllib.error.URLError, TimeoutError) as exc:
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_error = exc
             if attempt >= 4:
                 raise
@@ -512,6 +548,7 @@ def slim_market(market: dict[str, Any], closed_hint: bool | None = None) -> dict
         "id": market.get("id"),
         "question": market.get("question"),
         "slug": market.get("slug"),
+        "conditionId": market.get("conditionId") or "",
         "volumeNum": market.get("volumeNum"),
         "volume": market.get("volume"),
         "startDate": market.get("startDate"),
@@ -520,6 +557,7 @@ def slim_market(market: dict[str, Any], closed_hint: bool | None = None) -> dict
         "endDate": market.get("endDate"),
         "endDateIso": market.get("endDateIso"),
         "closed": closed,
+        "closedTime": market.get("closedTime"),
         "outcomes": market.get("outcomes"),
         "clobTokenIds": market.get("clobTokenIds"),
         "events": events,
@@ -711,6 +749,8 @@ def screen_cached(
     sample_end: date,
     min_volume: float,
     min_life_days: float,
+    volume_above: bool = False,
+    life_mode: str = "scheduled",
 ) -> tuple[list[dict[str, str]], Counter[str], dict[str, Any]]:
     seen: set[str] = set()
     selected: list[dict[str, str]] = []
@@ -743,6 +783,8 @@ def screen_cached(
                     sample_end=sample_end,
                     min_volume=min_volume,
                     min_life_days=min_life_days,
+                    volume_above=volume_above,
+                    life_mode=life_mode,
                 )
                 reasons[decision.reason] += 1
                 if decision.row is not None:
@@ -815,6 +857,40 @@ def render_summary(meta: dict[str, Any]) -> str:
     n_open = fmt_count(meta["n_open_contracts"])
     n_closed = fmt_count(meta["n_closed_contracts"])
     funnel = meta["funnel"]
+    if meta.get("volume_above"):
+        volume_rule = (
+            f"1. Lifetime volume above {fmt_volume(meta['min_volume'])} "
+            "(strict). Appendix A.3's Polymarket floor, in USD notional, not a contract count."
+        )
+        volume_rule_zh = (
+            f"1. 累计成交额严格大于 {fmt_volume(meta['min_volume'])} 美元名义。"
+            "对应附录 A.3 的 “above 2,000”，不是合约张数。"
+        )
+    else:
+        volume_rule = (
+            f"1. Lifetime volume ≥ {fmt_volume(meta['min_volume'])}. "
+            "Paper threshold: 10,000 contracts. Polymarket's figure is USD notional."
+        )
+        volume_rule_zh = (
+            f"1. 累计成交量 ≥ {fmt_volume(meta['min_volume'])}。"
+            "论文门槛是 10,000 张合约；Polymarket 这里用的是美元名义金额。"
+        )
+    if meta.get("life_mode") == "observed":
+        life_rule = (
+            f"2. Observed life ≥ {meta['min_life_days']:g} days. "
+            "The end is closedTime when Gamma has it, otherwise expiry, capped at the sample-end day."
+        )
+        life_rule_zh = (
+            f"2. 观察存续 ≥ {meta['min_life_days']:g} 天。"
+            "结束时刻优先用 closedTime，否则用到期时刻，并截到样本截止日。"
+        )
+    else:
+        life_rule = (
+            f"2. Scheduled life ≥ {meta['min_life_days']:g} days, elapsed time from the opening timestamp to expiry."
+        )
+        life_rule_zh = (
+            f"2. 预定存续期 ≥ {meta['min_life_days']:g} 天，即到期时刻减去开盘时刻的实际时长。"
+        )
     lines = [
         "# HLZ Polymarket paper sample / Hou–Li–Zheng 论文样本",
         "",
@@ -860,24 +936,31 @@ def render_summary(meta: dict[str, Any]) -> str:
         "",
         "每一行是一个二元 Polymarket 市场，也就是一张合约。同一事件下的多个市场都保留。",
         "",
-        f"1. Lifetime volume ≥ {fmt_volume(meta['min_volume'])}. "
-        "Paper threshold: 10,000 contracts. Polymarket's figure is USD notional.",
-        f"2. Scheduled life ≥ {meta['min_life_days']:g} days, elapsed time from the opening timestamp to expiry.",
+        volume_rule,
+        life_rule,
         f"3. Opening date (UTC calendar date) is on or before {end}.",
         "",
-        f"1. 累计成交量 ≥ {fmt_volume(meta['min_volume'])}。论文门槛是 10,000 张合约；Polymarket 这里用的是美元名义金额。",
-        f"2. 预定存续期 ≥ {meta['min_life_days']:g} 天，即到期时刻减去开盘时刻的实际时长。",
+        volume_rule_zh,
+        life_rule_zh,
         f"3. 开盘日（UTC 日历日）不晚于 {end}。",
         "",
         "Opening timestamp, in order: `startDate`, `startDateIso`, the parent event `startDate`, "
         "`createdAt`, the event `createdAt`, the event `creationDate`. "
         "Expiry, in order: `endDate`, `endDateIso`, the event `endDate`, the event `endDateIso`. "
-        "`closedTime` and `gameStartTime` are not used.",
+        + (
+            "Observed life uses `closedTime` when Gamma has it, otherwise expiry, and both are capped at the end of the sample-end day. `gameStartTime` is not used."
+            if meta.get("life_mode") == "observed"
+            else "`closedTime` and `gameStartTime` are not used."
+        ),
         "",
         "开盘时刻按以下顺序取第一个能解析的字段：`startDate`、`startDateIso`、父事件 `startDate`、"
         "`createdAt`、事件 `createdAt`、事件 `creationDate`。"
         "到期时刻按 `endDate`、`endDateIso`、事件 `endDate`、事件 `endDateIso`。"
-        "不用 `closedTime`（实际结束时间），也不用 `gameStartTime`（比赛开始时间）。",
+        + (
+            "观察存续用 Gamma 的 `closedTime`（没有则用到期时刻），并截到样本截止日结束。不用 `gameStartTime`。"
+            if meta.get("life_mode") == "observed"
+            else "不用 `closedTime`（实际结束时间），也不用 `gameStartTime`（比赛开始时间）。"
+        ),
         "",
         "These are not inclusion rules / 以下不是纳入条件:",
         "",
@@ -1046,6 +1129,111 @@ def build_meta(
     }
 
 
+def fill_identifiers(
+    rows: list[dict[str, str]],
+    sample_end: date,
+    min_life_days: float,
+    life_mode: str,
+    workers: int,
+) -> tuple[list[dict[str, str]], int]:
+    """Fill conditionId and closedTime from Gamma when the band cache lacks them.
+
+    ``GET /markets?id=`` ignores the filter and returns an empty list. The
+    working route is ``GET /markets/{id}``. Responses are cached so a rerun
+    does not repeat the lookup.
+    """
+    needed = [
+        row["market_id"]
+        for row in rows
+        if not row.get("condition_id")
+        or (life_mode == "observed" and row.get("closed") == "true" and not row.get("closed_time"))
+    ]
+    cache_path = DEFAULT_CACHE / "gamma_market_ids.jsonl"
+    found: dict[str, dict[str, Any]] = {}
+    if cache_path.exists():
+        with cache_path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                found[str(record.get("id") or "")] = record
+    needed = [market_id for market_id in needed if market_id not in found]
+    if not needed and not found:
+        return rows, 0
+    # Gamma's published /markets budget is about 300 calls per 10 seconds.
+    limiter = RateLimiter(30.0)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    lock = threading.Lock()
+    print(f"gamma identifier lookups remaining {len(needed)} cached {len(found)}", flush=True)
+
+    def run(market_id: str) -> tuple[str, dict[str, Any]]:
+        url = f"{pm.GAMMA_API}/markets/{urllib.parse.quote(market_id)}"
+        last_error: Exception | None = None
+        for _attempt in range(4):
+            try:
+                payload = get_json(url, limiter)
+                break
+            except RuntimeError as exc:
+                if "HTTP 404" in str(exc) or "HTTP 422" in str(exc):
+                    return market_id, {"id": market_id, "conditionId": "", "closedTime": None}
+                last_error = exc
+                time.sleep(5)
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                last_error = exc
+                time.sleep(5)
+        else:
+            raise RuntimeError(f"identifier lookup failed for {market_id}") from last_error
+        if not isinstance(payload, dict):
+            return market_id, {"id": market_id, "conditionId": "", "closedTime": None}
+        return market_id, {
+            "id": market_id,
+            "conditionId": payload.get("conditionId") or "",
+            "closedTime": payload.get("closedTime"),
+        }
+
+    done = 0
+    with cache_path.open("a", encoding="utf-8") as handle:
+        with ThreadPoolExecutor(max_workers=max(workers, 1)) as pool:
+            for start in range(0, len(needed), 2000):
+                chunk = needed[start : start + 2000]
+                futures = [pool.submit(run, market_id) for market_id in chunk]
+                for future in as_completed(futures):
+                    market_id, record = future.result()
+                    found[market_id] = record
+                    with lock:
+                        handle.write(json.dumps(record) + "\n")
+                        handle.flush()
+                    done += 1
+                    if done % 500 == 0 or done == len(needed):
+                        print(f"identifiers {done}/{len(needed)}", flush=True)
+    sample_cap = datetime.combine(sample_end, datetime.max.time(), tzinfo=timezone.utc)
+    kept: list[dict[str, str]] = []
+    dropped = 0
+    for row in rows:
+        market = found.get(row["market_id"])
+        if market is not None:
+            if not row.get("condition_id"):
+                row["condition_id"] = str(market.get("conditionId") or "")
+            closed_at = parse_dt(market.get("closedTime"))
+            if closed_at is not None:
+                row["closed_time"] = iso_z(closed_at)
+        if life_mode == "observed" and row.get("closed_time"):
+            opened = parse_dt(row.get("open_date"))
+            closed_at = parse_dt(row.get("closed_time"))
+            if opened is not None and closed_at is not None:
+                observed_end = min(closed_at, sample_cap)
+                observed_days = (observed_end - opened).total_seconds() / 86400.0
+                row["observed_life_days"] = f"{observed_days:.6f}"
+                if observed_days < min_life_days:
+                    dropped += 1
+                    continue
+        kept.append(row)
+    return kept, dropped
+
+
 def build_universe(args: argparse.Namespace) -> int:
     try:
         sample_end = (
@@ -1071,7 +1259,13 @@ def build_universe(args: argparse.Namespace) -> int:
         sample_end=sample_end,
         min_volume=args.min_volume,
         min_life_days=args.min_life_days,
+        volume_above=args.volume_above,
+        life_mode=args.life_mode,
     )
+    if args.fill_identifiers:
+        rows, dropped = fill_identifiers(rows, sample_end, args.min_life_days, args.life_mode, args.workers)
+        reasons["dropped_after_closed_time"] = dropped
+        print(f"identifiers filled, dropped_for_observed_life {dropped}, remaining {len(rows)}", flush=True)
     audit_coverage(coverage, min_volume=args.min_volume, max_bands=args.max_bands)
     print(
         f"funnel { {key: int(reasons.get(key, 0)) for key in (*FAILURE_ORDER, 'selected')} } "
@@ -1143,6 +1337,27 @@ def _self_test() -> None:
     sample_end = date(2026, 11, 7)
     kept = screen_market(_market(), sample_end=sample_end, min_volume=10_000, min_life_days=2)
     assert kept.reason == "selected" and kept.row is not None
+    assert screen_market(
+        _market(volumeNum=2000),
+        sample_end=sample_end,
+        min_volume=2000,
+        min_life_days=2,
+        volume_above=True,
+    ).reason == "below_volume"
+    assert screen_market(
+        _market(volumeNum=2000.01),
+        sample_end=sample_end,
+        min_volume=2000,
+        min_life_days=2,
+        volume_above=True,
+    ).reason == "selected"
+    assert screen_market(
+        _market(closedTime="2026-01-02T00:00:00Z", endDate="2026-06-01T00:00:00Z"),
+        sample_end=sample_end,
+        min_volume=10_000,
+        min_life_days=2,
+        life_mode="observed",
+    ).reason == "life_below_min"
     assert kept.row["yes_token"] == "yes-token"
     assert kept.row["event_id"] == "10"
     assert kept.row["volume_unit"] == "usd_notional"
@@ -1475,6 +1690,17 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--min-volume", type=float, default=10_000.0)
+    parser.add_argument(
+        "--volume-above",
+        action="store_true",
+        help="Exclusive floor. Appendix A.3 keeps volume above the cutoff, not equal to it.",
+    )
+    parser.add_argument("--life-mode", choices=("scheduled", "observed"), default="scheduled")
+    parser.add_argument(
+        "--fill-identifiers",
+        action="store_true",
+        help="Fetch Gamma conditionId and closedTime when the band cache does not have them.",
+    )
     parser.add_argument("--min-life-days", type=float, default=2.0)
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--max-bands", type=int, default=0, help="Debug cap on volume bands per side. 0 means all.")
@@ -1484,6 +1710,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument(
+        "--fill-only",
+        action="store_true",
+        help="Do not page Gamma bands. Fill conditionId and closedTime on the CSV at --output, then rewrite that CSV.",
+    )
     return parser
 
 
@@ -1491,11 +1722,52 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return build_parser().parse_args(argv)
 
 
+def refill_output(args: argparse.Namespace) -> int:
+    """Second pass for a CSV whose band cache had no conditionId or closedTime."""
+    if not args.output.exists():
+        raise SystemExit(f"missing {args.output}")
+    with args.output.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    sample_end = date.fromisoformat(args.end_date) if args.end_date else date.fromisoformat(rows[0]["sample_end_date"])
+    rows, dropped = fill_identifiers(rows, sample_end, args.min_life_days, args.life_mode, args.workers)
+    rows.sort(key=lambda row: (-float(row["cumulative_volume"]), row["market_id"]))
+    write_csv(args.output, rows)
+    meta_path = args.meta
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    meta["min_volume"] = args.min_volume
+    meta["min_life_days"] = args.min_life_days
+    meta["volume_above"] = bool(args.volume_above)
+    meta["life_mode"] = args.life_mode
+    meta["sample_end_date"] = sample_end.isoformat()
+    meta["n_contracts"] = len(rows)
+    meta["n_events"] = len({row["event_id"] for row in rows})
+    meta["n_open_contracts"] = sum(1 for row in rows if row["closed"] == "false")
+    meta["n_closed_contracts"] = sum(1 for row in rows if row["closed"] == "true")
+    meta["n_contracts_without_event"] = sum(1 for row in rows if row["event_id"].startswith("market:"))
+    meta["volume_stats"] = volume_stats([float(row["cumulative_volume"]) for row in rows])
+    funnel = meta.get("funnel") or {}
+    funnel["selected"] = len(rows)
+    funnel["dropped_after_closed_time"] = dropped
+    meta["funnel"] = funnel
+    meta["n_missing_condition_id"] = sum(1 for row in rows if not row.get("condition_id"))
+    meta["generated_at"] = iso_z(datetime.now(timezone.utc))
+    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    args.summary.write_text(render_summary(meta), encoding="utf-8")
+    print(
+        f"refilled contracts {len(rows)} dropped_for_observed_life {dropped} "
+        f"missing_condition {meta['n_missing_condition_id']}",
+        flush=True,
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if args.self_test:
         _self_test()
         return 0
+    if args.fill_only:
+        return refill_output(args)
     return build_universe(args)
 
 

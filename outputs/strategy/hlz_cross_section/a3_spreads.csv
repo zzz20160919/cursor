@@ -1,0 +1,8 @@
+characteristic,n_dates,mean_low_cents,mean_middle_cents,mean_high_cents,mean_high_minus_low_cents,scope
+yesmv,884,0.073974,-0.164420,0.282845,0.208871,a3_full_sample_through_hourly_coverage
+lor_1,755,0.249958,0.133226,0.163820,-0.086138,a3_full_sample_through_hourly_coverage
+lor_2,729,0.192687,-0.076977,-0.036119,-0.228806,a3_full_sample_through_hourly_coverage
+lor_3,730,0.093831,-0.089580,0.088509,-0.005322,a3_full_sample_through_hourly_coverage
+lor_4,722,0.026324,0.000144,0.116589,0.090265,a3_full_sample_through_hourly_coverage
+lor_5,717,-0.024112,-0.055715,-0.013373,0.010740,a3_full_sample_through_hourly_coverage
+lor_6,710,0.040182,-0.075489,0.029148,-0.011034,a3_full_sample_through_hourly_coverage
