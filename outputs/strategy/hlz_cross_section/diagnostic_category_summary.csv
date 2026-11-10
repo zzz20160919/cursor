@@ -1,0 +1,14 @@
+stat,value
+portfolio_dates,1120
+mean_categories_per_day,5.0679
+median_categories_per_day,7.0000
+min_categories_per_day,1
+max_categories_per_day,7
+mean_portfolio_contracts_per_day,338.7241
+mean_contracts_per_category_day,66.8377
+median_contracts_per_category_day,25.0000
+category_days_with_fewer_than_3_contracts,1014
+priced_days_blank_category,0
+priced_days,737834
+blank_share_of_priced_days,0.000000
+active_priced_days_blank_category,0

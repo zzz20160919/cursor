@@ -1,0 +1,10 @@
+stage,contract_days,share_of_paper_raw,share_of_paper_portfolio
+hourly_close_any_contract_day,737834,0.210377,0.821624
+alive_and_close_within_2h,679124,0.193637,0.756247
+alive_close_with_oi_observation,679124,0.193637,0.756247
+alive_close_positive_oi,678884,0.193569,0.755980
+plus_trade_in_prior_7_calendar_days,633856,0.180730,0.705838
+plus_nonempty_category,633856,0.180730,0.705838
+plus_next_period_price_portfolio,379371,0.108169,0.422453
+portfolio_on_dates_with_hourly_file,379371,0.108169,0.422453
+portfolio_dates,1120,,

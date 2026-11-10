@@ -96,3 +96,5 @@ Checked-in A.3 universe, sample end 2026-03-29: **178,408** contracts, **72,497*
 Formation dates run 2022-11-21 through 2026-03-29. Alive contract-days: 3,882,837. With a close at most 2 hours old: 737,834. Portfolio sample: 379,371. Mean High−Low is about **+0.21 cents** for YESMV (884 dates) and **−0.09 cents** for LOR(1) (755 dates). These are this sample's estimates, not a restatement of Table IA.15. Coverage, the other LOR horizons, and the remaining gaps are in `outputs/strategy/hlz_cross_section/STEP2_SUMMARY.md`.
 
 中文：成交额严格大于 2,000 美元名义；价格是小时收盘且不超过 2 小时；样本停在 2026-03-29，因为小时数据在这一天结束。
+
+Why these High−Low numbers differ from Table IA.15 is written up in `outputs/strategy/hlz_cross_section/DIAGNOSTIC_STEP2.md`. That note does not change the price rule or the universe.

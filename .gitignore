@@ -27,6 +27,15 @@ outputs/**
 !outputs/strategy/hlz_cross_section/a3_coverage.json
 !outputs/strategy/hlz_cross_section/a3_spreads.csv
 !outputs/strategy/hlz_cross_section/a3_spreads_daily.csv
+!outputs/strategy/hlz_cross_section/DIAGNOSTIC_STEP2.md
+!outputs/strategy/hlz_cross_section/diagnostic_funnel.csv
+!outputs/strategy/hlz_cross_section/diagnostic_price_age.csv
+!outputs/strategy/hlz_cross_section/diagnostic_oi.csv
+!outputs/strategy/hlz_cross_section/diagnostic_oi_extremes.csv
+!outputs/strategy/hlz_cross_section/diagnostic_category_summary.csv
+!outputs/strategy/hlz_cross_section/diagnostic_categories.csv
+!outputs/strategy/hlz_cross_section/diagnostic_spreads.csv
+!outputs/strategy/hlz_cross_section/diagnostic_numbers.json
 backups/
 snapshots/
 data/market_data/
