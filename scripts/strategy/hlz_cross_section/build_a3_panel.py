@@ -756,8 +756,8 @@ def render(meta: dict[str, Any]) -> str:
             f"The largest interpolation error on those exact blocks in this run is {meta['block_time_max_error_seconds']:.0f} seconds. "
             "The run aborts if that error can reach the cutoff (half of the 15-minute window).",
             "- Cached Gamma bands at volume ≥ 10,000 did not store `closedTime`. Those rows were backfilled. A market that still has no `closedTime` uses expiry, capped at the sample-end day, as the observed end.",
-            "- Newey–West standard errors are not computed. Bid–ask and cost-of-arbitrage sorts are not in the Polymarket tables and are not computed here.",
-            "- Step 3 is not started. The withdrawn `/v2/oi` snapshot is not an input.",
+            "- Bid–ask and cost-of-arbitrage sorts are not in the Polymarket tables and are not computed here. Newey–West(7) t-statistics for the sorts that are on this panel are written by the Step 3 command.",
+            "- Step 3 reads this factor panel and does not rebuild prices or the universe. The withdrawn `/v2/oi` snapshot is not an input.",
             "",
             f"Factor table: `{FACTOR.relative_to(REPO)}`. Daily spreads: `{SPREADS_DAILY.relative_to(REPO)}`.",
             "",

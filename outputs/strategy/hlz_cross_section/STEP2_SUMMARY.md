@@ -42,7 +42,7 @@ LOR(6): -0.0110 cents over 710 dates.
 - Open interest counts root complete-set splits, merges, and redemptions whose collateral is USDC.e, native USDC, or the neg-risk wrapper `0x3a3bd7bb9528e159577f7c2e685cc81a765002e2`. One unit of collateral is one complete set. Lifecycle rows that never appear in those CTF tables are absent, not filled in.
 - Block time is linear between anchors 500 blocks apart. Blocks within 15 minutes of a 4:00 p.m. cutoff are read exactly. The largest interpolation error on those exact blocks in this run is 245 seconds. The run aborts if that error can reach the cutoff (half of the 15-minute window).
 - Cached Gamma bands at volume ≥ 10,000 did not store `closedTime`. Those rows were backfilled. A market that still has no `closedTime` uses expiry, capped at the sample-end day, as the observed end.
-- Newey–West standard errors are not computed. Bid–ask and cost-of-arbitrage sorts are not in the Polymarket tables and are not computed here.
-- Step 3 is not started. The withdrawn `/v2/oi` snapshot is not an input.
+- Bid–ask and cost-of-arbitrage sorts are not in the Polymarket tables and are not computed here. Newey–West(7) t-statistics for the sorts that are on this panel are written by the Step 3 command.
+- Step 3 reads this factor panel and does not rebuild prices or the universe. The withdrawn `/v2/oi` snapshot is not an input.
 
 Factor table: `outputs/strategy/hlz_cross_section/a3_factor_daily.parquet`. Daily spreads: `outputs/strategy/hlz_cross_section/a3_spreads_daily.csv`.

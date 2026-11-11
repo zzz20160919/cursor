@@ -98,3 +98,15 @@ Formation dates run 2022-11-21 through 2026-03-29. Alive contract-days: 3,882,83
 中文：成交额严格大于 2,000 美元名义；价格是小时收盘且不超过 2 小时；样本停在 2026-03-29，因为小时数据在这一天结束。
 
 Why these High−Low numbers differ from Table IA.15 is written up in `outputs/strategy/hlz_cross_section/DIAGNOSTIC_STEP2.md`. That note does not change the price rule or the universe.
+
+## Step 3: category portfolios
+
+`build_step3.py` reads the factor panel above. It does not rebuild prices or the universe. Within each formation date and `vgregoire` category it winsorizes the characteristic at the 1st and 99th percentiles, assigns Low / Middle / High at the 30th and 70th, weights contracts by raw formation open interest, and aggregates categories by presort category open interest. The outcome is the mean next-period price change in cents. Newey–West t-statistics use 7 calendar lags.
+
+```bash
+python3 scripts/strategy/hlz_cross_section/build_step3.py
+```
+
+The result is this pipeline’s table, not a claim that Table IA.15 has been replicated. The side-by-side is in `outputs/strategy/hlz_cross_section/STEP3_SUMMARY.md`.
+
+中文：这一步只对已有因子表做分组，价格仍是两小时内的小时收盘，类别仍是那 7 个粗类。

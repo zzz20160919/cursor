@@ -36,6 +36,10 @@ outputs/**
 !outputs/strategy/hlz_cross_section/diagnostic_categories.csv
 !outputs/strategy/hlz_cross_section/diagnostic_spreads.csv
 !outputs/strategy/hlz_cross_section/diagnostic_numbers.json
+!outputs/strategy/hlz_cross_section/STEP3_SUMMARY.md
+!outputs/strategy/hlz_cross_section/step3_spreads.csv
+!outputs/strategy/hlz_cross_section/step3_spreads_daily.csv
+!outputs/strategy/hlz_cross_section/step3_vs_benchmarks.csv
 backups/
 snapshots/
 data/market_data/
