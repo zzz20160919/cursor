@@ -110,3 +110,5 @@ python3 scripts/strategy/hlz_cross_section/build_step3.py
 The result is this pipeline’s table, not a claim that Table IA.15 has been replicated. The side-by-side is in `outputs/strategy/hlz_cross_section/STEP3_SUMMARY.md`.
 
 中文：这一步只对已有因子表做分组，价格仍是两小时内的小时收盘，类别仍是那 7 个粗类。
+
+Why the YESMV High leg is positive is in `outputs/strategy/hlz_cross_section/DIAGNOSTIC_YESMV_HIGH.md`. That note only re-slices the existing Step 3 portfolios.

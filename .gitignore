@@ -40,6 +40,11 @@ outputs/**
 !outputs/strategy/hlz_cross_section/step3_spreads.csv
 !outputs/strategy/hlz_cross_section/step3_spreads_daily.csv
 !outputs/strategy/hlz_cross_section/step3_vs_benchmarks.csv
+!outputs/strategy/hlz_cross_section/DIAGNOSTIC_YESMV_HIGH.md
+!outputs/strategy/hlz_cross_section/diagnostic_yesmv_high_slices.csv
+!outputs/strategy/hlz_cross_section/diagnostic_yesmv_high_top.csv
+!outputs/strategy/hlz_cross_section/diagnostic_yesmv_high_days.csv
+!outputs/strategy/hlz_cross_section/diagnostic_yesmv_high_meta.csv
 backups/
 snapshots/
 data/market_data/
