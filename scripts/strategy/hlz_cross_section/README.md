@@ -111,4 +111,4 @@ The result is this pipeline’s table, not a claim that Table IA.15 has been rep
 
 中文：这一步只对已有因子表做分组，价格仍是两小时内的小时收盘，类别仍是那 7 个粗类。
 
-Why the YESMV High leg is positive is in `outputs/strategy/hlz_cross_section/DIAGNOSTIC_YESMV_HIGH.md`. The price check of those twenty contract-days is in `DIAGNOSTIC_YESMV_HIGH_PRICES.md`. A minimum High/Low bucket-size comparison, which does not replace the official table, is in `STEP3_MIN_N_SENSITIVITY.md`. None of these notes changes the portfolio rules.
+Why the YESMV High leg is positive is in `outputs/strategy/hlz_cross_section/DIAGNOSTIC_YESMV_HIGH.md`. The price check of those twenty contract-days is in `DIAGNOSTIC_YESMV_HIGH_PRICES.md`. A minimum High/Low bucket-size comparison, which does not replace the official table, is in `STEP3_MIN_N_SENSITIVITY.md`. A weight-cap comparison on that N=5 book is in `STEP3_WEIGHT_CAP_SENSITIVITY.md`. Neither replaces the official Step 3 numbers.
