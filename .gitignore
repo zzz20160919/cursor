@@ -47,6 +47,9 @@ outputs/**
 !outputs/strategy/hlz_cross_section/diagnostic_yesmv_high_meta.csv
 !outputs/strategy/hlz_cross_section/DIAGNOSTIC_YESMV_HIGH_PRICES.md
 !outputs/strategy/hlz_cross_section/diagnostic_yesmv_high_price_check.csv
+!outputs/strategy/hlz_cross_section/STEP3_MIN_N_SENSITIVITY.md
+!outputs/strategy/hlz_cross_section/step3_min_n_sensitivity.csv
+!outputs/strategy/hlz_cross_section/step3_min_n_yesmv_by_year.csv
 backups/
 snapshots/
 data/market_data/
