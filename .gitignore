@@ -53,6 +53,12 @@ outputs/**
 !outputs/strategy/hlz_cross_section/STEP3_WEIGHT_CAP_SENSITIVITY.md
 !outputs/strategy/hlz_cross_section/step3_weight_cap_sensitivity.csv
 !outputs/strategy/hlz_cross_section/step3_weight_cap_yesmv_by_year.csv
+!outputs/strategy/hlz_cross_section/STEP3_CATEGORY12_SENSITIVITY.md
+!outputs/strategy/hlz_cross_section/step3_category12_sensitivity.csv
+!outputs/strategy/hlz_cross_section/step3_category12_yesmv_by_year.csv
+!outputs/strategy/hlz_cross_section/category12_assignments.csv
+!outputs/strategy/hlz_cross_section/category12_coverage.csv
+!outputs/strategy/hlz_cross_section/category12_class_counts.csv
 backups/
 snapshots/
 data/market_data/
