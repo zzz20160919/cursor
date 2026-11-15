@@ -410,6 +410,34 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def conclusion_sentence(yes: list[dict[str, Any]]) -> str:
+    by_key = {(row["taxonomy"], row["rule"]): row for row in yes}
+    bits = []
+    for rule in ("official", "N=5", "N=10", "N=20"):
+        seven = by_key.get(("7-class", rule))
+        twelve = by_key.get(("12-class", rule))
+        if seven is None or twelve is None:
+            continue
+        seven_gap = abs(float(seven["mean_high_minus_low_cents"]) - (-0.255))
+        twelve_gap = abs(float(twelve["mean_high_minus_low_cents"]) - (-0.255))
+        closer = "12 类" if twelve_gap < seven_gap else "7 类"
+        bits.append(
+            f"{rule} 下价差更接近论文的是{closer}"
+            f"（7 类 {float(seven['mean_high_minus_low_cents']):+.3f}，"
+            f"12 类 {float(twelve['mean_high_minus_low_cents']):+.3f}）。"
+        )
+    official_dates = int(by_key[("7-class", "official")]["n_dates"])
+    n20_dates = int(by_key[("7-class", "N=20")]["n_dates"])
+    twelve_n20 = int(by_key[("12-class", "N=20")]["n_dates"])
+    twelve_official = int(by_key[("12-class", "official")]["n_dates"])
+    return (
+        f"- 7 类从官方 {official_dates} 天收到 N=20 的 {n20_dates} 天，少 {official_dates - n20_dates} 天；"
+        f"12 类从 {twelve_official} 天收到 {twelve_n20} 天，少 {twelve_official - twelve_n20} 天。"
+        "更高的 N 改变了哪一类更接近论文："
+        + "".join(bits)
+    )
+
+
 def render(
     coverage: list[dict[str, Any]],
     counts: list[dict[str, Any]],
@@ -473,7 +501,7 @@ def render(
             "## YESMV 对照",
             "",
             "7 类是因子表里的 vgregoire category。12 类是上面的互斥字段，Other 也参与分组。",
-            "官方参数不设桶的最少合约数，也不设权重上限。N=5 要求 High 和 Low 都至少 5 个合约。",
+            "官方参数不设桶的最少合约数，也不设权重上限。N 表示同一形成日、同一类别里 Low 和 High 各至少 N 个市场；任一不足则该类别日剔除，两腿只用共同留下的类别。",
             "论文 IA.15：High −0.171，Low +0.084，High−Low −0.255，t −5.81。",
             "",
             "| 分类 | 参数 | 日期 | Low | High | High−Low | NW t |",
@@ -533,8 +561,7 @@ def render(
         [
             "- 论文 IA.15：High −0.171，Low +0.084，High−Low −0.255，t −5.81。",
             "- 2024–2026 年约 99% 的市场能映进 12 类。2022 年 18 个市场里 16 个靠粗 category 回退，Other 为 0。2023 年 Other 占 60.9%，样本保留，没有剔除。",
-            "- 12 类官方的 High−Low（−0.284）比 7 类（+0.209）更接近论文的 −0.255，但 Low 被抬到 +0.320，High 仍是正的 +0.035，两条腿并不更像论文。",
-            "- 12 类 N=5 的 High−Low 是 −0.099，和 7 类 N=5 的 −0.100 几乎一样，都还远小于论文的 −0.255。",
+            conclusion_sentence(yes),
             "",
         ]
     )
@@ -583,8 +610,12 @@ def main() -> int:
     schemes = (
         ("7-class", "category_7", None, "official"),
         ("7-class", "category_7", 5, "N=5"),
+        ("7-class", "category_7", 10, "N=10"),
+        ("7-class", "category_7", 20, "N=20"),
         ("12-class", "category_12", None, "official"),
         ("12-class", "category_12", 5, "N=5"),
+        ("12-class", "category_12", 10, "N=10"),
+        ("12-class", "category_12", 20, "N=20"),
     )
     results = {}
     for taxonomy, field, minimum, rule in schemes:
@@ -592,8 +623,12 @@ def main() -> int:
         results[(taxonomy, rule)] = run_portfolios(grouped, field, minimum)
     official = summarize(results[("7-class", "official")]["YESMV"])
     n5 = summarize(results[("7-class", "N=5")]["YESMV"])
+    n10 = summarize(results[("7-class", "N=10")]["YESMV"])
+    n20 = summarize(results[("7-class", "N=20")]["YESMV"])
     check_known(official, 884, 0.073974, 0.282845, 0.208871, 1.2140, "7-class official")
     check_known(n5, 671, 0.056947, -0.043212, -0.100159, -3.5895, "7-class N=5")
+    check_known(n10, 653, 0.057096, -0.044906, -0.102002, -3.3078, "7-class N=10")
+    check_known(n20, 622, 0.050769, -0.042138, -0.092907, -3.1032, "7-class N=20")
     print("7-class baselines match", flush=True)
     table = []
     year_rows = []
