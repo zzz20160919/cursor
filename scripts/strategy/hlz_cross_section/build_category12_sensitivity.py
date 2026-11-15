@@ -369,6 +369,16 @@ def run_portfolios(grouped: dict[Any, list[dict[str, Any]]], field: str, minimum
 
 def summarize(series: list[dict[str, Any]]) -> dict[str, Any]:
     count = len(series)
+    if count == 0:
+        return {
+            "n_dates": 0,
+            "n_category_days": 0,
+            "mean_low_cents": None,
+            "mean_high_cents": None,
+            "mean_high_minus_low_cents": None,
+            "newey_west_t_lag7": None,
+            "series": [],
+        }
     spreads = [row["high_minus_low"] for row in series]
     return {
         "n_dates": count,
@@ -413,10 +423,11 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 def conclusion_sentence(yes: list[dict[str, Any]]) -> str:
     by_key = {(row["taxonomy"], row["rule"]): row for row in yes}
     bits = []
-    for rule in ("official", "N=5", "N=10", "N=20"):
+    for rule in ("official", "N=5", "N=10", "N=20", "N=50", "N=100", "N=500"):
         seven = by_key.get(("7-class", rule))
         twelve = by_key.get(("12-class", rule))
-        if seven is None or twelve is None:
+        if seven is None or twelve is None or seven["mean_high_minus_low_cents"] == "" or twelve["mean_high_minus_low_cents"] == "":
+            bits.append(f"{rule} 下至少有一边没有可用日期，不能和论文比价差。")
             continue
         seven_gap = abs(float(seven["mean_high_minus_low_cents"]) - (-0.255))
         twelve_gap = abs(float(twelve["mean_high_minus_low_cents"]) - (-0.255))
@@ -427,14 +438,25 @@ def conclusion_sentence(yes: list[dict[str, Any]]) -> str:
             f"12 类 {float(twelve['mean_high_minus_low_cents']):+.3f}）。"
         )
     official_dates = int(by_key[("7-class", "official")]["n_dates"])
-    n20_dates = int(by_key[("7-class", "N=20")]["n_dates"])
-    twelve_n20 = int(by_key[("12-class", "N=20")]["n_dates"])
     twelve_official = int(by_key[("12-class", "official")]["n_dates"])
+
+    def days(taxonomy: str, rule: str) -> int:
+        return int(by_key[(taxonomy, rule)]["n_dates"])
+
+    losses = []
+    for rule in ("N=50", "N=100", "N=500"):
+        seven_days = days("7-class", rule)
+        twelve_days = days("12-class", rule)
+        losses.append(
+            f"{rule}：7 类 {seven_days} 天（比官方少 {official_dates - seven_days}），"
+            f"12 类 {twelve_days} 天（比官方少 {twelve_official - twelve_days}）"
+        )
     return (
-        f"- 7 类从官方 {official_dates} 天收到 N=20 的 {n20_dates} 天，少 {official_dates - n20_dates} 天；"
-        f"12 类从 {twelve_official} 天收到 {twelve_n20} 天，少 {twelve_official - twelve_n20} 天。"
-        "更高的 N 改变了哪一类更接近论文："
+        "- 日期："
+        + "；".join(losses)
+        + "。"
         + "".join(bits)
+        + "N=50 和 N=100 没有改变 N=5 以后的结论：7 类价差仍更接近论文，两边都远不到 −0.255。N=500 两边都没有日期，不能比较。"
     )
 
 
@@ -511,15 +533,18 @@ def render(
     for row in rows:
         if row["characteristic"] != "YESMV":
             continue
-        lines.append(
-            f"| {row['taxonomy']} | {row['rule']} | {row['n_dates']} | "
-            f"{float(row['mean_low_cents']):.3f} | {float(row['mean_high_cents']):.3f} | "
-            f"{float(row['mean_high_minus_low_cents']):.3f} | {float(row['newey_west_t_lag7']):.2f} |"
-        )
+        if row["mean_low_cents"] == "":
+            lines.append(f"| {row['taxonomy']} | {row['rule']} | 0 | 缺失 | 缺失 | 缺失 | 缺失 |")
+        else:
+            lines.append(
+                f"| {row['taxonomy']} | {row['rule']} | {row['n_dates']} | "
+                f"{float(row['mean_low_cents']):.3f} | {float(row['mean_high_cents']):.3f} | "
+                f"{float(row['mean_high_minus_low_cents']):.3f} | {float(row['newey_west_t_lag7']):.2f} |"
+            )
     lines.extend(
         [
             "",
-            "7 类官方和 7 类 N=5 两行用来核对旧结果，不是新估计。",
+            "官方、N=5、N=10、N=20 这八行已对上旧结果。N=50、N=100、N=500 是这次新加的。",
             "",
             "## 分年 YESMV",
             "",
@@ -544,19 +569,48 @@ def render(
         ]
     )
     for row in rows:
-        lines.append(
-            f"| {row['taxonomy']} | {row['rule']} | {row['characteristic']} | {row['n_dates']} | "
-            f"{float(row['mean_low_cents']):.3f} | {float(row['mean_high_cents']):.3f} | "
-            f"{float(row['mean_high_minus_low_cents']):.3f} | {float(row['newey_west_t_lag7']):.2f} |"
+        if row["mean_low_cents"] == "":
+            lines.append(
+                f"| {row['taxonomy']} | {row['rule']} | {row['characteristic']} | 0 | 缺失 | 缺失 | 缺失 | 缺失 |"
+            )
+        else:
+            t_text = "" if row["newey_west_t_lag7"] == "" else f"{float(row['newey_west_t_lag7']):.2f}"
+            lines.append(
+                f"| {row['taxonomy']} | {row['rule']} | {row['characteristic']} | {row['n_dates']} | "
+                f"{float(row['mean_low_cents']):.3f} | {float(row['mean_high_cents']):.3f} | "
+                f"{float(row['mean_high_minus_low_cents']):.3f} | {t_text} |"
+            )
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault((row["taxonomy"], row["rule"]), []).append(row)
+    fully_empty = sorted(
+        f"{taxonomy} {rule}"
+        for (taxonomy, rule), items in grouped.items()
+        if all(item["mean_low_cents"] == "" for item in items)
+    )
+    if fully_empty:
+        lines.extend(
+            [
+                "",
+                "整档天数为 0：" + "、".join(fully_empty) + "。",
+                "原因：没有任何一个 formation_date×category 能让 Low 和 High 同时达到该 N 个不同市场，共同类别集每天都是空的，所以结果缺失。",
+                "上面表里其余标成缺失的行，是该特征自己没有够 N 的类别日；同一档的其他特征仍有日期。",
+            ]
         )
     yes = [row for row in rows if row["characteristic"] == "YESMV"]
     lines.extend(["", "## 结论", ""])
     for row in yes:
-        lines.append(
-            f"- {row['taxonomy']} / {row['rule']}: High {float(row['mean_high_cents']):+.3f}，"
-            f"Low {float(row['mean_low_cents']):+.3f}，High−Low {float(row['mean_high_minus_low_cents']):+.3f}，"
-            f"t {float(row['newey_west_t_lag7']):.2f}，{row['n_dates']} 天。"
-        )
+        if row["mean_low_cents"] == "":
+            lines.append(
+                f"- {row['taxonomy']} / {row['rule']}: 0 天，结果缺失。"
+                "没有任何一个 formation_date×category 能让 Low 和 High 同时达到该 N 个不同市场。"
+            )
+        else:
+            lines.append(
+                f"- {row['taxonomy']} / {row['rule']}: High {float(row['mean_high_cents']):+.3f}，"
+                f"Low {float(row['mean_low_cents']):+.3f}，High−Low {float(row['mean_high_minus_low_cents']):+.3f}，"
+                f"t {float(row['newey_west_t_lag7']):.2f}，{row['n_dates']} 天。"
+            )
     lines.extend(
         [
             "- 论文 IA.15：High −0.171，Low +0.084，High−Low −0.255，t −5.81。",
@@ -593,7 +647,18 @@ def main() -> int:
     passed = gate_ok(assigned)
     print("coverage", [(row["formation_year"], row["other_share"], row["mappable_share"]) for row in coverage], flush=True)
     print("gate", passed, "sources", dict(sources), flush=True)
-    write_csv(ASSIGNMENTS, assigned)
+    if ASSIGNMENTS.exists():
+        with ASSIGNMENTS.open(encoding="utf-8") as handle:
+            frozen = {
+                row["market_id"]: (row["category_12"], row["source"])
+                for row in csv.DictReader(handle)
+            }
+        current = {row["market_id"]: (row["category_12"], row["source"]) for row in assigned}
+        if frozen != current:
+            raise SystemExit("category12_assignments.csv would change; kept the frozen file")
+        print("frozen category12 assignments unchanged", flush=True)
+    else:
+        write_csv(ASSIGNMENTS, assigned)
     write_csv(COVERAGE, coverage)
     write_csv(COUNTS, counts)
     fetched_at = ""
@@ -616,6 +681,12 @@ def main() -> int:
         ("12-class", "category_12", 5, "N=5"),
         ("12-class", "category_12", 10, "N=10"),
         ("12-class", "category_12", 20, "N=20"),
+        ("7-class", "category_7", 50, "N=50"),
+        ("7-class", "category_7", 100, "N=100"),
+        ("7-class", "category_7", 500, "N=500"),
+        ("12-class", "category_12", 50, "N=50"),
+        ("12-class", "category_12", 100, "N=100"),
+        ("12-class", "category_12", 500, "N=500"),
     )
     results = {}
     for taxonomy, field, minimum, rule in schemes:
@@ -629,13 +700,18 @@ def main() -> int:
     check_known(n5, 671, 0.056947, -0.043212, -0.100159, -3.5895, "7-class N=5")
     check_known(n10, 653, 0.057096, -0.044906, -0.102002, -3.3078, "7-class N=10")
     check_known(n20, 622, 0.050769, -0.042138, -0.092907, -3.1032, "7-class N=20")
-    print("7-class baselines match", flush=True)
+    check_known(summarize(results[("12-class", "official")]["YESMV"]), 901, 0.319665, 0.035490, -0.284174, -1.1192, "12-class official")
+    check_known(summarize(results[("12-class", "N=5")]["YESMV"]), 663, 0.073707, -0.025764, -0.099470, -2.7075, "12-class N=5")
+    check_known(summarize(results[("12-class", "N=10")]["YESMV"]), 644, 0.062894, -0.010553, -0.073446, -1.7672, "12-class N=10")
+    check_known(summarize(results[("12-class", "N=20")]["YESMV"]), 587, 0.036783, 0.039728, 0.002945, 0.0427, "12-class N=20")
+    print("previous rows match", flush=True)
     table = []
     year_rows = []
     for taxonomy, _field, _minimum, rule in schemes:
         for _key, label in CHARACTERISTICS:
             stats = summarize(results[(taxonomy, rule)][label])
             t_stat = stats["newey_west_t_lag7"]
+            missing = stats["n_dates"] == 0
             table.append(
                 {
                     "taxonomy": taxonomy,
@@ -643,10 +719,11 @@ def main() -> int:
                     "characteristic": label,
                     "n_dates": stats["n_dates"],
                     "n_category_days": stats["n_category_days"],
-                    "mean_low_cents": f"{stats['mean_low_cents']:.6f}",
-                    "mean_high_cents": f"{stats['mean_high_cents']:.6f}",
-                    "mean_high_minus_low_cents": f"{stats['mean_high_minus_low_cents']:.6f}",
+                    "mean_low_cents": "" if missing else f"{stats['mean_low_cents']:.6f}",
+                    "mean_high_cents": "" if missing else f"{stats['mean_high_cents']:.6f}",
+                    "mean_high_minus_low_cents": "" if missing else f"{stats['mean_high_minus_low_cents']:.6f}",
                     "newey_west_t_lag7": "" if t_stat is None else f"{t_stat:.4f}",
+                    "result": "missing_no_category_met_min_n" if missing else "ok",
                 }
             )
         buckets: dict[str, list[dict[str, Any]]] = {"2023": [], "2024": [], "2025-2026": []}
