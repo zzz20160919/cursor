@@ -1,6 +1,6 @@
 # Step 3 sensitivity: minimum High and Low bucket size
 
-This does not replace the official Step 3 table. The official row calls the same `category_portfolios` function as `build_step3.py`. A higher minimum drops a date×category when High or Low has fewer contracts than that minimum. Winsorization, the 30/70 split, raw open-interest weights, and presort category weights are unchanged. There is no weight cap.
+官方 Step 3 现已改为 N=5。本文件的 official 行仍是不设最少合约数的旧口径（YESMV 884 天，High−Low +0.209，t 1.21），不再等于 `step3_spreads.csv`。更高的 N 在 High 或 Low 合约数不足时剔除该类别日。Winsorize、30/70、raw open interest 和类别权重不变，也没有权重上限。
 
 N = 5 is the main sensitivity. Paper Table IA.15 YESMV is Low +0.084, High −0.171, High−Low −0.255 (t = −5.81).
 
@@ -15,7 +15,7 @@ N = 5 is the main sensitivity. Paper Table IA.15 YESMV is Low +0.084, High −0.
 | min_high_low_20 | 622 | 1830 | 262 | 2831 | 0.051 | -0.042 | -0.093 | -3.10 |
 | min_high_low_30 | 593 | 1435 | 291 | 3226 | 0.054 | -0.030 | -0.084 | -2.87 |
 
-The official row matches `step3_spreads.csv`: YESMV High +0.283, Low +0.074, High−Low +0.209, t 1.21, 884 dates.
+The official row in this file is the old unrestricted sort: YESMV High +0.283, Low +0.074, High−Low +0.209, t 1.21, 884 dates. It is not the current `step3_spreads.csv`.
 
 ## All characteristics
 
@@ -95,4 +95,4 @@ The official row matches `step3_spreads.csv`: YESMV High +0.283, Low +0.074, Hig
 | min_high_low_30 | 2024 | 141 | 0.020 | 0.005 | -0.015 | -0.59 |
 | min_high_low_30 | 2025-2026 | 452 | 0.064 | -0.041 | -0.105 | -2.84 |
 
-中文：这只是把 High 和 Low 桶的最少合约数从“非空”提高到 2、5、10、20、30。N=5 是主要对照。官方那一行与现有 Step 3 数字一致，正式结果文件没有被覆盖。
+中文：这张表把 High 和 Low 桶的最少合约数从“非空”提高到 2、5、10、20、30。表内 official 行是旧的不设下限口径。当前正式结果是 N=5，写在 `STEP3_SUMMARY.md`。

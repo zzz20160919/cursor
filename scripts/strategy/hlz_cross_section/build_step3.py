@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Step 3 portfolios from the existing Step 2 factor panel.
 
-Sorts within formation date and vgregoire category. Breakpoints use the
-winsorized characteristic. Weights are formation-time raw open interest.
-This does not rebuild prices or the universe and does not start Step 4.
+Official sort: seven vgregoire categories, Low and High each at least 5
+markets in that formation date and category, no weight cap. Breakpoints
+use the winsorized characteristic. Weights are formation-time raw open
+interest. This does not rebuild prices or the universe and does not start
+Step 4.
 """
 
 from __future__ import annotations
@@ -23,16 +25,39 @@ REPO = HERE.parents[2]
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-from hlz_paper import category_portfolios  # noqa: E402
-
-
 OUT = REPO / "outputs/strategy/hlz_cross_section"
 FACTOR = OUT / "a3_factor_daily.parquet"
-DIAGNOSTIC = OUT / "diagnostic_spreads.csv"
 DAILY_PATH = OUT / "step3_spreads_daily.csv"
 SUMMARY_PATH = OUT / "step3_spreads.csv"
 COMPARE_PATH = OUT / "step3_vs_benchmarks.csv"
 REPORT_PATH = OUT / "STEP3_SUMMARY.md"
+MIN_HIGH_LOW = 5
+
+# The previous official table had no minimum bucket size.
+PREVIOUS_OFFICIAL = {
+    "YESMV": {"n_dates": 884, "hl": 0.208871, "t": 1.2140},
+    "Open interest": {"n_dates": 884, "hl": -0.012579, "t": -0.0709},
+    "Formation price": {"n_dates": 880, "hl": 0.298026, "t": 1.4591},
+    "LOR(1)": {"n_dates": 755, "hl": -0.086138, "t": -0.3991},
+    "LOR(2)": {"n_dates": 729, "hl": -0.228806, "t": -1.0363},
+    "LOR(3)": {"n_dates": 730, "hl": -0.005322, "t": -0.0408},
+    "LOR(4)": {"n_dates": 722, "hl": 0.090265, "t": 0.5100},
+    "LOR(5)": {"n_dates": 717, "hl": 0.010740, "t": 0.0890},
+    "LOR(6)": {"n_dates": 710, "hl": -0.011034, "t": -0.0806},
+}
+
+# 7-class N=5 rows already published in the category comparison.
+KNOWN_N5 = {
+    "YESMV": (671, 0.056947, -0.043212, -0.100159, -3.5895),
+    "Open interest": (671, 0.117697, -0.026239, -0.143936, -2.3618),
+    "Formation price": (671, -0.001037, -0.009197, -0.008160, -0.1166),
+    "LOR(1)": (653, 0.031340, -0.056874, -0.088214, -0.7939),
+    "LOR(2)": (648, 0.074424, -0.070192, -0.144616, -1.5580),
+    "LOR(3)": (652, 0.031915, 0.050449, 0.018534, 0.1586),
+    "LOR(4)": (649, 0.086644, 0.017744, -0.068900, -0.5882),
+    "LOR(5)": (647, 0.057793, 0.052206, -0.005587, -0.0526),
+    "LOR(6)": (646, 0.028208, -0.009078, -0.037287, -0.3411),
+}
 
 # Column on the factor panel, then the label used in the tables.
 CHARACTERISTICS = (
@@ -59,18 +84,6 @@ PAPER = {
     "LOR(5)": {"low": 0.180, "middle": -0.171, "high": -0.387, "hl": -0.566, "t": -4.87},
     "LOR(6)": {"low": 0.125, "middle": -0.099, "high": -0.376, "hl": -0.501, "t": -3.96},
 }
-
-# diagnostic_spreads.csv uses these names for the raw-OI scheme.
-DIAGNOSTIC_NAME = {
-    "YESMV": "yesmv",
-    "LOR(1)": "lor_1",
-    "LOR(2)": "lor_2",
-    "LOR(3)": "lor_3",
-    "LOR(4)": "lor_4",
-    "LOR(5)": "lor_5",
-    "LOR(6)": "lor_6",
-}
-
 
 def newey_west_t(values: list[float], lags: int = 7) -> float | None:
     """t-statistic of the mean. Bartlett kernel, `lags` Newey-West lags."""
@@ -164,6 +177,8 @@ def load_panel() -> dict[date, list[dict[str, Any]]]:
 def form_portfolios(
     grouped: dict[date, list[dict[str, Any]]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    from build_step3_min_n_sensitivity import portfolios_min_bucket
+
     daily_rows: list[dict[str, Any]] = []
     by_label: dict[str, list[dict[str, Any]]] = {label: [] for _key, label in CHARACTERISTICS}
     for day in sorted(grouped):
@@ -182,7 +197,7 @@ def form_portfolios(
                         "r": member["r"],
                     }
                 )
-            result = category_portfolios(usable)
+            result = portfolios_min_bucket(usable, MIN_HIGH_LOW)
             if result is None:
                 continue
             record = {
@@ -227,41 +242,31 @@ def form_portfolios(
     return daily_rows, summary
 
 
-def diagnostic_lookup() -> dict[str, dict[str, str]]:
-    if not DIAGNOSTIC.exists():
-        return {}
-    found = {}
-    with DIAGNOSTIC.open(encoding="utf-8") as handle:
-        for row in csv.DictReader(handle):
-            if row["scheme"] != "aligned_raw_oi":
-                continue
-            found[row["characteristic"]] = row
-    return found
-
-
-def check_against_diagnostic(summary: list[dict[str, Any]]) -> None:
-    previous = diagnostic_lookup()
-    for row in summary:
-        key = DIAGNOSTIC_NAME.get(row["characteristic"])
-        if key is None or key not in previous:
-            continue
-        prior = float(previous[key]["mean_high_minus_low_cents"])
-        if abs(row["mean_high_minus_low_cents"] - prior) > 1e-4:
-            raise SystemExit(
-                f"{row['characteristic']} High-Low {row['mean_high_minus_low_cents']:.6f} "
-                f"disagrees with the diagnostic raw-OI spread {prior:.6f}"
-            )
-        if int(previous[key]["n_dates"]) != row["n_dates"]:
-            raise SystemExit(f"{row['characteristic']} date count disagrees with the diagnostic")
+def check_known_n5(summary: list[dict[str, Any]]) -> None:
+    by_name = {row["characteristic"]: row for row in summary}
+    for label, (n_dates, low, high, spread, t_stat) in KNOWN_N5.items():
+        row = by_name.get(label)
+        if row is None:
+            raise SystemExit(f"missing {label}")
+        if row["n_dates"] != n_dates:
+            raise SystemExit(f"{label} has {row['n_dates']} dates, expected {n_dates}")
+        for name, got, expected in (
+            ("low", row["mean_low_cents"], low),
+            ("high", row["mean_high_cents"], high),
+            ("high-low", row["mean_high_minus_low_cents"], spread),
+        ):
+            if abs(got - expected) > 5e-4:
+                raise SystemExit(f"{label} {name} is {got:.6f}, expected {expected:.6f}")
+        got_t = row["newey_west_t_lag7"]
+        if got_t is None or abs(got_t - t_stat) > 5e-4:
+            raise SystemExit(f"{label} t is {got_t}, expected {t_stat}")
 
 
 def comparison_rows(summary: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    previous = diagnostic_lookup()
     rows = []
     for row in summary:
         paper = PAPER.get(row["characteristic"], {})
-        diag_key = DIAGNOSTIC_NAME.get(row["characteristic"])
-        diag = previous.get(diag_key or "", {})
+        previous = PREVIOUS_OFFICIAL[row["characteristic"]]
         rows.append(
             {
                 "characteristic": row["characteristic"],
@@ -271,8 +276,11 @@ def comparison_rows(summary: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "our_high_cents": f"{row['mean_high_cents']:.6f}",
                 "our_high_minus_low_cents": f"{row['mean_high_minus_low_cents']:.6f}",
                 "our_newey_west_t": "" if row["newey_west_t_lag7"] is None else f"{row['newey_west_t_lag7']:.4f}",
-                "diagnostic_high_minus_low_cents": diag.get("mean_high_minus_low_cents", ""),
-                "diagnostic_newey_west_t": diag.get("newey_west_t_lag7", ""),
+                "previous_no_min_n_dates": previous["n_dates"],
+                "previous_no_min_n_high_minus_low_cents": f"{previous['hl']:.6f}",
+                "previous_no_min_n_t": f"{previous['t']:.4f}",
+                "ia15_low_cents": "" if not paper else f"{paper['low']:.3f}",
+                "ia15_high_cents": "" if not paper else f"{paper['high']:.3f}",
                 "ia15_high_minus_low_cents": "" if not paper else f"{paper['hl']:.3f}",
                 "ia15_t": "" if not paper else f"{paper['t']:.2f}",
             }
@@ -285,25 +293,19 @@ def fmt(value: float, digits: int = 3) -> str:
 
 
 def render(summary: list[dict[str, Any]]) -> str:
+    by_name = {row["characteristic"]: row for row in summary}
+    yes = by_name["YESMV"]
     lines = [
         "# HLZ Step 3 portfolios",
         "",
-        "这是我们自己的分组结果，不是表 IA.15 的复述。价格仍是两小时内的小时收盘，类别仍是 vgregoire 的 7 个粗类。",
+        "官方口径是 7 个 vgregoire 类别、N=5、没有权重上限。同一形成日、同一类别里，Low 和 High 各至少 5 个不同市场；任一不足则该类别日剔除，两腿只用共同留下的类别。",
+        "其余仍按论文：类别内 1% / 99% winsorize，30% / 70% 分位只决定成员身份，raw open interest 两阶段加权，结果是下一期 YES 价格变动（美分/张），Newey–West 滞后 7 期。",
+        "价格仍是两小时内的小时收盘，没有重跑价格或持仓，也没有换成 12 类。12 类对照仍在 `STEP3_CATEGORY12_SENSITIVITY.md`。",
         "",
         "The input is the Step 2 portfolio sample in `a3_factor_daily.parquet`. "
-        "Prices, the volume screen, and open interest are not rebuilt. "
-        "Within each formation date and `markets.category`, the characteristic is winsorized "
-        "at the 1st and 99th percentiles of that cell. Low / Middle / High use the 30th and 70th "
-        "percentiles of the winsorized values. Those breakpoints decide membership only. "
-        "Contracts are weighted by formation-time raw open interest. A category enters the day "
-        "only when Low, Middle, and High are all non-empty. Category portfolios are then weighted "
-        "by that category's total open interest measured before the sort. "
-        "The reported number is the mean next-period price change in cents per YES claim. "
-        "t-statistics are Newey–West with 7 lags on the daily High−Low series.",
-        "",
         "Sample end remains 2026-03-29. Categories are Politics, Sports, Crypto, Culture, Finance, Tech, and Weather.",
         "",
-        "## Our table",
+        "## Official table",
         "",
         "| Characteristic | Dates | Low | Middle | High | High−Low | NW(7) t |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
@@ -319,60 +321,55 @@ def render(summary: list[dict[str, Any]]) -> str:
     lines.extend(
         [
             "",
-            "Stars use the normal two-sided cuts 1.645 / 1.96 / 2.576. None of the required YESMV or LOR spreads reach the 10% cut on this sample.",
+            "Stars use the normal two-sided cuts 1.645 / 1.96 / 2.576.",
             "",
-            "## Side by side",
+            "## 与旧官方、与论文",
             "",
-            "The diagnostic High−Low means are the earlier raw-open-interest sorts on this same panel. "
-            "They match this table. The diagnostic t-statistics were computed on the daily series in storage order, not calendar order, so they are not repeated as the inference. "
-            "The t-statistics in this table are Newey–West with 7 lags on the calendar-ordered High−Low. "
-            "IA.15 is the paper's Polymarket sort. It can use a quote midpoint when no fresh close exists, and it uses an official category this file does not contain.",
+            "旧官方不设最少合约数：YESMV 884 天，High−Low +0.208871，t 1.2140。论文 IA.15 没有披露天数。",
             "",
-            "| Characteristic | Our High−Low | Our t | Diagnostic High−Low | IA.15 High−Low | IA.15 t |",
-            "| --- | ---: | ---: | ---: | ---: | ---: |",
+            "| Characteristic | Dates | High−Low | t | 旧官方天数 | 旧官方 High−Low | 旧官方 t | IA.15 Low | IA.15 High | IA.15 High−Low | IA.15 t |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
-    previous = diagnostic_lookup()
     for row in summary:
-        paper = PAPER.get(row["characteristic"])
-        diag = previous.get(DIAGNOSTIC_NAME.get(row["characteristic"], ""), {})
+        paper = PAPER[row["characteristic"]]
+        previous = PREVIOUS_OFFICIAL[row["characteristic"]]
         t_stat = row["newey_west_t_lag7"]
         lines.append(
-            "| {name} | {ours:.3f} | {t} | {diag} | {paper_hl} | {paper_t} |".format(
-                name=row["characteristic"],
-                ours=row["mean_high_minus_low_cents"],
-                t="" if t_stat is None else f"{t_stat:.2f}",
-                diag=diag.get("mean_high_minus_low_cents", ""),
-                paper_hl="" if paper is None else f"{paper['hl']:.3f}",
-                paper_t="" if paper is None else f"{paper['t']:.2f}",
-            )
+            f"| {row['characteristic']} | {row['n_dates']} | {fmt(row['mean_high_minus_low_cents'])} | "
+            f"{'' if t_stat is None else f'{t_stat:.2f}'} | {previous['n_dates']} | {previous['hl']:+.3f} | "
+            f"{previous['t']:.2f} | {paper['low']:+.3f} | {paper['high']:+.3f} | {paper['hl']:+.3f} | {paper['t']:.2f} |"
         )
-    by_name = {row["characteristic"]: row for row in summary}
-    yes = by_name["YESMV"]
-    lor = by_name["LOR(1)"]
-    chinese = (
-        f"中文：YESMV 的 High−Low 是 {yes['mean_high_minus_low_cents']:+.3f} 分，"
-        f"按日历排序的 Newey–West t 是 {yes['newey_west_t_lag7']:.2f}，"
-        "和论文的 −0.255 分（t = −5.81）方向相反。"
-        f"LOR(1) 是 {lor['mean_high_minus_low_cents']:+.3f} 分（t = {lor['newey_west_t_lag7']:.2f}），"
-        "LOR(2) 到 LOR(6) 也都接近零且不显著。"
-        "这些均值和诊断表里的原始持仓量加权结果一致。"
-    )
+    lor_bits = []
+    for name in ("LOR(1)", "LOR(2)", "LOR(3)", "LOR(4)", "LOR(5)", "LOR(6)"):
+        row = by_name[name]
+        lor_bits.append(
+            f"{name} {row['n_dates']} 天，Low {row['mean_low_cents']:+.3f}，High {row['mean_high_cents']:+.3f}，"
+            f"High−Low {row['mean_high_minus_low_cents']:+.3f}，t {row['newey_west_t_lag7']:.2f}"
+        )
     lines.extend(
         [
             "",
+            (
+                f"YESMV：{yes['n_dates']} 天，Low {yes['mean_low_cents']:+.6f}，High {yes['mean_high_cents']:+.6f}，"
+                f"High−Low {yes['mean_high_minus_low_cents']:+.6f}，t {yes['newey_west_t_lag7']:.4f}。"
+                "相对旧官方，天数从 884 减到 671，High−Low 从 +0.208871 变成 −0.100159。"
+                "论文 IA.15 是 Low +0.084，High −0.171，High−Low −0.255，t −5.81。"
+                "新的价差方向与论文相同，幅度大约是论文的四成，High 仍远没有到 −0.171。"
+            ),
+            "LOR：" + "；".join(lor_bits) + "。论文对应的 High−Low 是 −0.725、−0.603、−0.538、−0.553、−0.566、−0.501。",
+            "",
             "## What this is not",
             "",
-            "- Not a replication of Table IA.15. The paper's High−Low YESMV is −0.255 cents (t = −5.81). Ours is positive and insignificant.",
+            "- Not a replication of Table IA.15. The paper's YESMV High−Low is −0.255 cents (t = −5.81). This table is −0.100 cents (t = −3.59) over 671 dates.",
             "- The paper can price a contract with a two-hour quote midpoint when the last trade is older than two hours. This panel cannot.",
-            "- The paper's official category is unnamed. These sorts use seven vgregoire categories.",
-            "- Open interest and formation price are included because they are already on the factor panel. Seven-day maximum price, maturity, volume, and liquidity sorts are not on the panel and are not filled in.",
+            "- These sorts use seven vgregoire categories, not the 12-class map.",
+            "- There is no single-name weight cap.",
+            "- Open interest and formation price are included because they are already on the factor panel. Seven-day maximum price, maturity, volume, and liquidity sorts are not on the panel.",
             "- Bid–ask and cost-of-arbitrage sorts are omitted in the paper's Polymarket table and are omitted here.",
-            "- Step 4 is not started.",
+            "- Step 4 is not started. The 12-class comparison is unchanged.",
             "",
             "Daily series: `outputs/strategy/hlz_cross_section/step3_spreads_daily.csv`.",
-            "",
-            chinese,
             "",
         ]
     )
@@ -387,7 +384,7 @@ def main() -> int:
         raise SystemExit(f"missing {FACTOR}")
     grouped = load_panel()
     daily_rows, summary = form_portfolios(grouped)
-    check_against_diagnostic(summary)
+    check_known_n5(summary)
     summary_out = []
     for row in summary:
         t_stat = row["newey_west_t_lag7"]

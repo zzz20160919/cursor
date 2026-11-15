@@ -101,7 +101,7 @@ Why these High−Low numbers differ from Table IA.15 is written up in `outputs/s
 
 ## Step 3: category portfolios
 
-`build_step3.py` reads the factor panel above. It does not rebuild prices or the universe. Within each formation date and `vgregoire` category it winsorizes the characteristic at the 1st and 99th percentiles, assigns Low / Middle / High at the 30th and 70th, weights contracts by raw formation open interest, and aggregates categories by presort category open interest. The outcome is the mean next-period price change in cents. Newey–West t-statistics use 7 calendar lags.
+`build_step3.py` reads the factor panel above. It does not rebuild prices or the universe. The official sort uses the seven `vgregoire` categories. Within each formation date and category it winsorizes the characteristic at the 1st and 99th percentiles and assigns Low / Middle / High at the 30th and 70th. A category-day stays only when Low and High each contain at least 5 markets; both legs then use that common set. There is no weight cap. Contracts are weighted by raw formation open interest, and categories by presort category open interest. The outcome is the mean next-period price change in cents. Newey–West t-statistics use 7 calendar lags.
 
 ```bash
 python3 scripts/strategy/hlz_cross_section/build_step3.py
@@ -109,6 +109,6 @@ python3 scripts/strategy/hlz_cross_section/build_step3.py
 
 The result is this pipeline’s table, not a claim that Table IA.15 has been replicated. The side-by-side is in `outputs/strategy/hlz_cross_section/STEP3_SUMMARY.md`.
 
-中文：这一步只对已有因子表做分组，价格仍是两小时内的小时收盘，类别仍是那 7 个粗类。
+中文：官方分组是 7 个粗类、N=5、没有权重上限。价格仍是两小时内的小时收盘。
 
-Why the YESMV High leg is positive is in `outputs/strategy/hlz_cross_section/DIAGNOSTIC_YESMV_HIGH.md`. The price check of those twenty contract-days is in `DIAGNOSTIC_YESMV_HIGH_PRICES.md`. A minimum High/Low bucket-size comparison, which does not replace the official table, is in `STEP3_MIN_N_SENSITIVITY.md`. A weight-cap comparison on that N=5 book is in `STEP3_WEIGHT_CAP_SENSITIVITY.md`. The 12-class navigation comparison is in `STEP3_CATEGORY12_SENSITIVITY.md`. None of these replace the official Step 3 numbers.
+Why the unrestricted YESMV High leg was positive is in `outputs/strategy/hlz_cross_section/DIAGNOSTIC_YESMV_HIGH.md`. The price check of those twenty contract-days is in `DIAGNOSTIC_YESMV_HIGH_PRICES.md`. The old no-minimum sort and the other bucket sizes are in `STEP3_MIN_N_SENSITIVITY.md`. A weight-cap comparison on the N=5 book is in `STEP3_WEIGHT_CAP_SENSITIVITY.md`. The 12-class comparison is in `STEP3_CATEGORY12_SENSITIVITY.md`. Those notes are not the official table.

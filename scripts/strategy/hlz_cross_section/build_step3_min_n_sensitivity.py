@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Sensitivity of Step 3 to a minimum High and Low bucket size.
 
-The official Step 3 files are not rewritten. The official row calls
-category_portfolios unchanged. A category-day is dropped when its High
-or Low bucket is thinner than the minimum. Weights, winsorization, and
-the 30/70 split are otherwise the same.
+The official Step 3 table is now the N=5 sort written by build_step3.py.
+The row named official in this file is the older sort with no minimum.
+This script does not rewrite the official Step 3 files. A category-day
+is dropped when its High or Low bucket is thinner than the minimum.
+Weights, winsorization, and the 30/70 split are otherwise the same.
 """
 
 from __future__ import annotations
@@ -27,7 +28,6 @@ from hlz_paper import assign_legs, category_portfolios, oi_weighted_mean  # noqa
 
 OUT = REPO / "outputs/strategy/hlz_cross_section"
 FACTOR = OUT / "a3_factor_daily.parquet"
-OFFICIAL = OUT / "step3_spreads.csv"
 TABLE = OUT / "step3_min_n_sensitivity.csv"
 YEAR_TABLE = OUT / "step3_min_n_yesmv_by_year.csv"
 REPORT = OUT / "STEP3_MIN_N_SENSITIVITY.md"
@@ -186,35 +186,34 @@ def summarize(series: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def official_file() -> dict[str, dict[str, str]]:
-    with OFFICIAL.open(encoding="utf-8") as handle:
-        return {row["characteristic"]: row for row in csv.DictReader(handle)}
+# The unrestricted sort, frozen when the official table still had no minimum.
+OLD_UNRESTRICTED = {
+    "YESMV": (884, 0.073974, 0.282845, 0.208871, 1.2140),
+    "Open interest": (884, 0.288748, 0.276170, -0.012579, -0.0709),
+    "Formation price": (880, -0.076225, 0.221801, 0.298026, 1.4591),
+    "LOR(1)": (755, 0.249958, 0.163820, -0.086138, -0.3991),
+    "LOR(2)": (729, 0.192687, -0.036119, -0.228806, -1.0363),
+    "LOR(3)": (730, 0.093831, 0.088509, -0.005322, -0.0408),
+    "LOR(4)": (722, 0.026324, 0.116589, 0.090265, 0.5100),
+    "LOR(5)": (717, -0.024112, -0.013373, 0.010740, 0.0890),
+    "LOR(6)": (710, 0.040182, 0.029148, -0.011034, -0.0806),
+}
 
 
-def check_official(summary: dict[str, Any], label: str, prior: dict[str, str]) -> None:
+def check_unrestricted(summary: dict[str, Any], label: str) -> None:
+    n_dates, low, high, spread, t_stat = OLD_UNRESTRICTED[label]
     checks = {
-        "n_dates": (summary["n_dates"], int(prior["n_dates"]), 0),
-        "mean_low_cents": (summary["mean_low_cents"], float(prior["mean_low_cents"]), 1e-4),
-        "mean_high_cents": (summary["mean_high_cents"], float(prior["mean_high_cents"]), 1e-4),
-        "mean_high_minus_low_cents": (
-            summary["mean_high_minus_low_cents"],
-            float(prior["mean_high_minus_low_cents"]),
-            1e-4,
-        ),
+        "n_dates": (summary["n_dates"], n_dates, 0),
+        "mean_low_cents": (summary["mean_low_cents"], low, 1e-4),
+        "mean_high_cents": (summary["mean_high_cents"], high, 1e-4),
+        "mean_high_minus_low_cents": (summary["mean_high_minus_low_cents"], spread, 1e-4),
     }
     for name, (got, expected, tol) in checks.items():
         if abs(got - expected) > tol:
-            raise SystemExit(
-                f"official {label} {name} is {got} but step3_spreads.csv has {expected}. "
-                "Official files were not changed."
-            )
+            raise SystemExit(f"unrestricted {label} {name} is {got}, expected {expected}")
     got_t = summary["newey_west_t_lag7"]
-    expected_t = float(prior["newey_west_t_lag7"])
-    if got_t is None or abs(got_t - expected_t) > 1e-3:
-        raise SystemExit(
-            f"official {label} Newey-West t is {got_t} but step3_spreads.csv has {expected_t}. "
-            "Official files were not changed."
-        )
+    if got_t is None or abs(got_t - t_stat) > 1e-3:
+        raise SystemExit(f"unrestricted {label} Newey-West t is {got_t}, expected {t_stat}")
 
 
 def year_bucket(day: Any) -> str:
@@ -238,7 +237,7 @@ def render(rows: list[dict[str, Any]], years: list[dict[str, Any]]) -> str:
     lines = [
         "# Step 3 sensitivity: minimum High and Low bucket size",
         "",
-        "This does not replace the official Step 3 table. The official row calls the same `category_portfolios` function as `build_step3.py`. A higher minimum drops a date×category when High or Low has fewer contracts than that minimum. Winsorization, the 30/70 split, raw open-interest weights, and presort category weights are unchanged. There is no weight cap.",
+        "官方 Step 3 现已改为 N=5。本文件的 official 行仍是不设最少合约数的旧口径（YESMV 884 天，High−Low +0.209，t 1.21），不再等于 `step3_spreads.csv`。更高的 N 在 High 或 Low 合约数不足时剔除该类别日。Winsorize、30/70、raw open interest 和类别权重不变，也没有权重上限。",
         "",
         "N = 5 is the main sensitivity. Paper Table IA.15 YESMV is Low +0.084, High −0.171, High−Low −0.255 (t = −5.81).",
         "",
@@ -260,7 +259,7 @@ def render(rows: list[dict[str, Any]], years: list[dict[str, Any]]) -> str:
     lines.extend(
         [
             "",
-            "The official row matches `step3_spreads.csv`: YESMV High +0.283, Low +0.074, High−Low +0.209, t 1.21, 884 dates.",
+            "The official row in this file is the old unrestricted sort: YESMV High +0.283, Low +0.074, High−Low +0.209, t 1.21, 884 dates. It is not the current `step3_spreads.csv`.",
             "",
             "## All characteristics",
             "",
@@ -295,7 +294,7 @@ def render(rows: list[dict[str, Any]], years: list[dict[str, Any]]) -> str:
     lines.extend(
         [
             "",
-            "中文：这只是把 High 和 Low 桶的最少合约数从“非空”提高到 2、5、10、20、30。N=5 是主要对照。官方那一行与现有 Step 3 数字一致，正式结果文件没有被覆盖。",
+            "中文：这张表把 High 和 Low 桶的最少合约数从“非空”提高到 2、5、10、20、30。表内 official 行是旧的不设下限口径。当前正式结果是 N=5，写在 `STEP3_SUMMARY.md`。",
             "",
         ]
     )
@@ -303,18 +302,17 @@ def render(rows: list[dict[str, Any]], years: list[dict[str, Any]]) -> str:
 
 
 def main() -> int:
-    if not FACTOR.exists() or not OFFICIAL.exists():
-        raise SystemExit("missing the official Step 3 panel or step3_spreads.csv")
+    if not FACTOR.exists():
+        raise SystemExit("missing the Step 2 factor panel")
     grouped = load_panel()
-    prior = official_file()
     results: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for name, minimum in SCHEMES:
         print(f"scheme {name}", flush=True)
         results[name] = run_scheme(grouped, minimum)
     official_summary = {label: summarize(results["official"][label]) for _key, label in CHARACTERISTICS}
     for _key, label in CHARACTERISTICS:
-        check_official(official_summary[label], label, prior[label])
-    print("official row matches step3_spreads.csv", flush=True)
+        check_unrestricted(official_summary[label], label)
+    print("unrestricted row matches the frozen no-minimum table", flush=True)
     rows: list[dict[str, Any]] = []
     for name, minimum in SCHEMES:
         for _key, label in CHARACTERISTICS:
