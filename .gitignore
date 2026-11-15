@@ -59,6 +59,8 @@ outputs/**
 !outputs/strategy/hlz_cross_section/category12_assignments.csv
 !outputs/strategy/hlz_cross_section/category12_coverage.csv
 !outputs/strategy/hlz_cross_section/category12_class_counts.csv
+!outputs/strategy/hlz_cross_section/STEP3_SCENARIOS.md
+!outputs/strategy/hlz_cross_section/step3_scenarios.csv
 backups/
 snapshots/
 data/market_data/
