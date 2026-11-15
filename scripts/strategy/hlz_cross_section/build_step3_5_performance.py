@@ -37,6 +37,7 @@ YEAR_PATH = OUT / "step3_5_by_year.csv"
 CHART = OUT / "step3_5_wealth.png"
 
 EQUITY = 10_000.0
+LEG_CASH = 5_000.0
 PERIODS_PER_YEAR = 365.25
 MIN_N = 5
 YEARS = (2022, 2023, 2024, 2025, 2026)
@@ -126,41 +127,56 @@ def usable_price(price: float | None) -> bool:
     return price is not None and price > 0.0
 
 
+def price_outside(price: float | None) -> bool:
+    return price is None or price < 0.0 or price > 1.0
+
+
 def day_pnl(book: dict[str, Any]) -> dict[str, Any]:
+    """$5,000 cash YES on Low and $5,000 cash NO on High. No leverage, no renormalization."""
     dropped = []
-    pnl = {"low": 0.0, "high": 0.0}
+    outside = []
+    long_pnl = 0.0
+    no_pnl = 0.0
     invested = {"low": 0.0, "high": 0.0}
     names = {"low": 0, "high": 0}
-    for leg, sign in (("low", 1.0), ("high", -1.0)):
-        for member in book["holdings"][leg]:
-            price = member["p_form"]
-            if not usable_price(price):
-                dropped.append(
-                    {
-                        "market_id": member["market_id"],
-                        "leg": leg,
-                        "p_form": price,
-                        "weight": member["weight"],
-                    }
-                )
-                continue
-            dollars = EQUITY * member["weight"]
-            shares = dollars / price
-            change = member["p_end"] - price
-            pnl[leg] += sign * shares * change
-            invested[leg] += dollars
-            names[leg] += 1
-    total = pnl["low"] + pnl["high"]
+    for member in book["holdings"]["low"]:
+        price = member["p_form"]
+        end = member["p_end"]
+        if not usable_price(price):
+            dropped.append({"market_id": member["market_id"], "leg": "low", "p_form": price, "weight": member["weight"]})
+            continue
+        if price_outside(price) or price_outside(end):
+            outside.append({"market_id": member["market_id"], "leg": "low", "p_form": price, "p_end": end})
+        dollars = LEG_CASH * member["weight"]
+        shares = dollars / price
+        long_pnl += shares * (end - price)
+        invested["low"] += dollars
+        names["low"] += 1
+    for member in book["holdings"]["high"]:
+        price = member["p_form"]
+        end = member["p_end"]
+        if price is None or price >= 1.0:
+            dropped.append({"market_id": member["market_id"], "leg": "high", "p_form": price, "weight": member["weight"]})
+            continue
+        if price_outside(price) or price_outside(end):
+            outside.append({"market_id": member["market_id"], "leg": "high", "p_form": price, "p_end": end})
+        dollars = LEG_CASH * member["weight"]
+        shares = dollars / (1.0 - price)
+        no_pnl += shares * (price - end)
+        invested["high"] += dollars
+        names["high"] += 1
+    total = long_pnl + no_pnl
     return {
         "pnl": total,
-        "long_pnl": pnl["low"],
-        "short_pnl": pnl["high"],
+        "long_pnl": long_pnl,
+        "no_pnl": no_pnl,
         "return": total / EQUITY,
         "dollars_low": invested["low"],
         "dollars_high": invested["high"],
         "names_low": names["low"],
         "names_high": names["high"],
         "dropped": dropped,
+        "outside": outside,
     }
 
 
@@ -315,10 +331,14 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 def pct(value: float | None, digits: int = 2) -> str:
     if value is None:
         return ""
+    if abs(value) >= 100.0:
+        return f"{value:.3e}"
     return f"{value * 100:.{digits}f}%"
 
 
 def money(value: float) -> str:
+    if abs(value) >= 1.0e9:
+        return f"${value:.3e}"
     return f"${value:,.2f}"
 
 
@@ -339,8 +359,9 @@ def save_chart(dates: list[date], wealth: list[float], drawdown: list[float]) ->
         return False
     fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
     axes[0].plot(dates, wealth, color="#1f4e79", linewidth=1.2)
-    axes[0].set_ylabel("Wealth ($)")
-    axes[0].set_title("Compounded wealth through the day equity crosses zero")
+    axes[0].set_yscale("log")
+    axes[0].set_ylabel("Wealth ($, log)")
+    axes[0].set_title("Compounded wealth: 5000 cash YES plus 5000 cash NO, no leverage")
     axes[1].fill_between(dates, drawdown, 0.0, color="#9a3412", alpha=0.8)
     axes[1].set_ylabel("Drawdown")
     axes[1].yaxis.set_major_formatter(plt.FuncFormatter(lambda value, _pos: f"{value:.0%}"))
@@ -368,7 +389,9 @@ def render(
     years: list[dict[str, Any]],
     dropped: list[dict[str, Any]],
     chart_ok: bool,
-    ruin: dict[str, Any],
+    march: dict[str, Any],
+    outside_count: int,
+    over_one: list[dict[str, Any]],
 ) -> str:
     by_year = defaultdict(int)
     for day in invested_dates:
@@ -378,16 +401,20 @@ def render(
         "# Step 3.5：官方 YESMV 的美元绩效",
         "",
         "这不是新的官方分组，也不改 Step 3 的参数。评估的就是现行官方 YESMV：7 类、N=5、无权重上限。",
-        "方向是做多 Low、做空 High。每个形成日，Low 和 High 各投入 10,000 美元市值，权益按 10,000 美元计。没有融资成本、买卖价差或手续费。",
-        "名字 i 的官方权重是 w_i，形成价是 P_i。dollars_i = 10000 × w_i，shares_i = dollars_i / P_i。多头盈亏是 shares × (P_next − P)，空头盈亏是 shares × (P − P_next)。日收益率 r_t = 当日盈亏 / 10000。",
-        "下一期价格变动记在形成日当天。两个形成日之间没有官方组合的自然日，收益记为 0。这不是把已有的约 −0.10 美分 High−Low 乘一个常数。",
+        "没有杠杆。每个有持仓的形成日，用 5,000 美元现金买 Low 的 YES，用 5,000 美元现金买 High 的 NO。中间 40% 不持有。没有官方组合的日子全部是现金，收益为 0。",
+        "Low 名字 i：dollars_i = 5000 × w_i，YES 张数 = dollars_i / P_i，盈亏 = 张数 × (P_end − P)。P_i 缺失或 ≤ 0 就跳过，剩下的现金收益为 0，不把权重重新归一。",
+        "High 名字 j：按 1−P_j 买 NO。dollars_j = 5000 × w_j，NO 张数 = dollars_j / (1−P_j)，盈亏 = 张数 × (P − P_end)。P_j 缺失或 ≥ 1 就跳过，剩下的现金收益为 0，不重新归一。",
+        "日收益率 r_t = (YES 盈亏 + NO 盈亏) / 10000。成交假定打在官方面板已经使用的同一小时收盘上。没有买卖价差、手续费或滑点，也没有另设费率。",
+        "下一期价格变动记在形成日当天。这不是把官方大约 −0.10 美分的 High−Low 乘一个常数。",
         "",
         "## 样本",
         "",
         f"- 有持仓的形成日：{len(invested_dates)} 天，从 {first.isoformat()} 到 {last.isoformat()}。",
         f"- 分年持仓日：{year_counts}。",
         f"- 第一天到最后一天共 {len(calendar)} 个自然日，其中没有官方组合、记为现金的 {(len(calendar) - len(invested_dates))} 天。",
-        f"- 形成价缺失或 ≤ 0 而被跳过的名字：{len(dropped)}。跳过的美元不重新分配给其他名字。",
+        f"- 跳过的名字：{len(dropped)}。Low 在形成价缺失或 ≤ 0 时跳过，High 在形成价缺失或 ≥ 1 时跳过。剩下的现金收益为 0，不重新归一。",
+        f"- 形成价或到期价落在 [0, 1] 之外的持仓：{outside_count}。收益没有被截断。",
+        f"- 单日 |r| > 1 的持仓日：{len(over_one)}。下跌超过 100% 的天数：{sum(item['return'] < -1.0 for item in over_one)}。",
         "",
         "## 公式",
         "",
@@ -398,45 +425,43 @@ def render(
         "- 下行波动：sqrt(均值(min(r_t, 0)^2)) × sqrt(365.25)。均值按该视图里的全部期间平均，包含 0。",
         "- Sortino：算术年化 / 年化下行波动，基准为 0。下行波动为 0 时不计算。",
         "- Sharpe：算术年化 / 年化波动，基准为 0。",
-        "- 复利路径：W_t = 10000 × ∏(1+r_s)。现金日的 r 为 0，乘上去仍是 1。若某一天 r≤−1，财富变成负数，之后的连乘不再是可加仓的账户余额，(W_end/10000) 的 365.25 次方也没有实数。",
-        "- (A) 只使用 671 个持仓日，期间数是 671。这是“每个自然日都有持仓”的年化。",
+        "- 复利路径：W_t = 10000 × ∏(1+r_s)。现金日的 r 为 0，乘上去仍是 1。复利年化是 (W_end / 10000) ^ (365.25 / 期间数) − 1；W_end ≤ 0 时没有实数解。",
+        "- (A) 只使用有持仓的日期。这是“每个自然日都有持仓”的年化。",
         "- (B) 使用第一天到最后一天的每个自然日，没有组合的日子收益为 0。期间数是这段日历的天数。",
-        "- 恒定名义累计盈亏 = Σ 当日盈亏。它对应“每天把权益放回 10,000 美元”，不把已经亏穿的账户继续复利。",
+        "- 恒定名义累计盈亏 = 10000 × Σ r_t。它对应每天把 10,000 美元重新分成两笔 5,000 美元，不把盈亏滚入下一天的本金。",
         "",
         "## 全样本",
         "",
-        "| 视图 | 期间数 | 日均收益 | 算术年化 | 年化波动 | 下行波动 | Sortino | Sharpe | 下跌日占比 | 恒定名义累计盈亏 |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| 视图 | 期间数 | 期末财富 | 总复利 | 复利年化 | 算术年化 | 年化波动 | 下行波动 | Sortino | Sharpe | 下跌日占比 | 恒定名义累计盈亏 |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for view in (view_a, view_b):
         lines.append(
-            f"| {view['view']} | {view['periods']} | {pct(view['mean_daily'])} | "
-            f"{pct(view['annualized_arithmetic'])} | {pct(view['annualized_vol'])} | "
+            f"| {view['view']} | {view['periods']} | {money(view['ending_wealth'])} | {pct(view['total_return'])} | "
+            f"{pct(view['annualized_compound'])} | {pct(view['annualized_arithmetic'])} | {pct(view['annualized_vol'])} | "
             f"{pct(view['downside_deviation'])} | {num_text(view['sortino'])} | "
             f"{num_text(view['sharpe'])} | {pct(view['negative_day_share'])} | {money(view['total_pnl'])} |"
         )
     lines.extend(
         [
             "",
+            "现金日收益为 0，所以 A 和 B 的期末财富相同。两种年化的差别只在期间数，以及均值和波动是否把现金日算进去。",
             (
-                f"复利路径在 {ruin['peak_date']} 达到 {money(ruin['peak_wealth'])}，"
-                f"下一笔形成在 {ruin['date']}，当日盈亏 {money(ruin['pnl'])}，收益率 {pct(ruin['return'])}，"
-                f"财富变成 {money(ruin['wealth'])}。"
-            ),
-            "这一天 Low 里有形成价 0.001 和 0.002 的合约结算到 0，多头按美元/价格换成的张数几乎亏光；空头同时小亏，所以亏损超过 10,000 美元权益。",
-            "此后 ∏(1+r) 为负。全样本复利年化和“期末仍是正财富”的总复利都没有实数解，这里不把负数财富再开方。",
-            (
-                f"正财富上的最大回撤就是这一次穿仓：峰值 {money(drawdown['peak_wealth'])}（{drawdown['peak_date']}），"
+                f"最大回撤 {pct(drawdown['max_drawdown'])}，峰值 {money(drawdown['peak_wealth'])}（{drawdown['peak_date']}），"
                 f"谷值 {money(drawdown['trough_wealth'])}（{drawdown['trough_date']}），"
-                f"回撤 {pct(drawdown['max_drawdown'])}，金额 {money(drawdown['dollar_loss'])}。恢复日：{drawdown['recovery_date']}。"
+                f"回撤金额 {money(drawdown['dollar_loss'])}。恢复日：{drawdown['recovery_date'] or '没有回撤'}。"
             ),
-            "穿仓之后财富不再回到这个正的峰值。",
+            (
+                f"2024-03-26 当日收益 {pct(march['return'])}，盈亏 {money(march['pnl'])}，"
+                f"其中 YES {money(march['long_pnl'])}，NO {money(march['no_pnl'])}。"
+                "Low 里三份 RFK 竞选搭档合约的形成价是 0.001 或 0.002，结算到 0，5,000 美元 YES 现金几乎亏光，NO 再小亏一笔。"
+                "这大约是权益的一半，不是旧算法里的 −101.95%。"
+            ),
             "",
             "## 分年",
             "",
-            "波动和下行波动用该年窗口内的自然日，按 365.25 年化。最大回撤把该年单独从 10,000 美元复利到第一次财富小于等于 0，不承接上一年已经变成负数的余额。",
-            "连乘结果是该年 ∏(1+r)−1。一旦年中有 r≤−1，这个连乘为负，不能读成普通百分比；同列旁边给出每天重置权益的盈亏。",
-            "2022 和 2023 都在 2024-01-22 之前，不在第一天到最后一天的窗口里，所以不是窗口内的现金日。窗口内的现金日全部出现在 2024 年。",
+            "每年的连乘是该年窗口内自然日的 ∏(1+r)−1，不另做年化。波动和下行波动按 365.25 年化。年内回撤从该年单独的 10,000 美元起算。",
+            "2022 和 2023 都在第一天之前，不在窗口里，所以不是窗口内的现金日。",
             "",
             "| 年 | 连乘结果 | 恒定名义盈亏 | 年化波动 | 下行波动 | 最大回撤 | 持仓日 | 现金日 |",
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
@@ -453,20 +478,19 @@ def render(
             "## 中文结论",
             "",
             (
-                f"官方 YESMV 按做多 Low、做空 High 评估，没有改分组。样本 {first.isoformat()} 至 {last.isoformat()}，"
-                f"持仓 {len(invested_dates)} 天，窗口内现金 {(len(calendar) - len(invested_dates))} 天，都在 2024 年。"
-                f"2022 和 2023 不在这个窗口里。形成价没有缺失，也没有小于等于 0 的名字被剔除。"
-                f"每天把权益放回 10,000 美元，Low 和 High 各做 10,000 美元市值，累计盈亏 {money(view_b['total_pnl'])}。"
-                f"持仓日日均收益 {pct(view_a['mean_daily'])}，把现金日算进日历后日均 {pct(view_b['mean_daily'])}。"
-                f"只算持仓日：算术年化 {pct(view_a['annualized_arithmetic'])}，年化波动 {pct(view_a['annualized_vol'])}，"
-                f"下行波动 {pct(view_a['downside_deviation'])}，Sharpe {view_a['sharpe']:.2f}，Sortino {view_a['sortino']:.2f}，"
-                f"下跌日占持仓日的 {pct(view_a['negative_day_share'])}。"
-                f"日历含现金日：算术年化 {pct(view_b['annualized_arithmetic'])}，年化波动 {pct(view_b['annualized_vol'])}，"
-                f"下行波动 {pct(view_b['downside_deviation'])}，Sharpe {view_b['sharpe']:.2f}，Sortino {view_b['sortino']:.2f}，"
-                f"下跌日占日历的 {pct(view_b['negative_day_share'])}。"
-                f"复利在 {ruin['peak_date']} 到 {money(ruin['peak_wealth'])}，{ruin['date']} 当天收益 {pct(ruin['return'])}，"
-                f"财富变成 {money(ruin['wealth'])}。最大回撤 {pct(drawdown['max_drawdown'])}，没有恢复。"
-                "复利年化没有实数解。比率这么大，是因为张数等于投入美元除以形成价，不是因为每张合约涨了零点几美分。"
+                f"官方 YESMV 改为无杠杆现金：每个持仓日用 5,000 美元买 Low 的 YES，用 5,000 美元买 High 的 NO，中间 40% 不拿。"
+                f"样本 {first.isoformat()} 至 {last.isoformat()}，持仓 {len(invested_dates)} 天，窗口内现金 {(len(calendar) - len(invested_dates))} 天。"
+                f"2022 和 2023 不在这个窗口里。成交打在同一小时收盘上，没有价差、手续费或滑点。"
+                f"期末财富 {money(view_b['ending_wealth'])}，总复利 {pct(view_b['total_return'])}，恒定名义累计盈亏 {money(view_b['total_pnl'])}。"
+                f"只算持仓日：复利年化 {pct(view_a['annualized_compound'])}，算术年化 {pct(view_a['annualized_arithmetic'])}，"
+                f"年化波动 {pct(view_a['annualized_vol'])}，下行波动 {pct(view_a['downside_deviation'])}，"
+                f"Sharpe {view_a['sharpe']:.2f}，Sortino {view_a['sortino']:.2f}，下跌日占 {pct(view_a['negative_day_share'])}。"
+                f"日历含现金日：复利年化 {pct(view_b['annualized_compound'])}，算术年化 {pct(view_b['annualized_arithmetic'])}，"
+                f"年化波动 {pct(view_b['annualized_vol'])}，下行波动 {pct(view_b['downside_deviation'])}，"
+                f"Sharpe {view_b['sharpe']:.2f}，Sortino {view_b['sortino']:.2f}，下跌日占 {pct(view_b['negative_day_share'])}。"
+                f"最大回撤 {pct(drawdown['max_drawdown'])}，峰值 {money(drawdown['peak_wealth'])} 在 {drawdown['peak_date']}，"
+                f"谷值 {money(drawdown['trough_wealth'])} 在 {drawdown['trough_date']}，恢复日 {drawdown['recovery_date'] or '没有回撤'}。"
+                f"2024-03-26 当天收益 {pct(march['return'])}，不是旧算法的 −101.95%。"
                 "官方 High−Low 大约 −0.10 美分/张，本身不是这笔 10,000 美元的收益率。这是没有成本的回测。"
             ),
             "",
@@ -526,29 +550,33 @@ def main() -> int:
                 "drawdown": f"{drawdown:.10f}",
             }
         )
-    returns_b = [float(row["r_t"]) for row in daily_out]
+    returns_b = []
+    for day in calendar_days:
+        returns_b.append(invested_rows[day]["return"] if day in invested_rows else 0.0)
     returns_a = [invested_rows[day]["return"] for day in invested_dates]
     view_a = summarize("A 只算持仓日", returns_a, len(returns_a))
     view_b = summarize("B 日历含现金日", returns_b, len(returns_b))
-    solvent: list[tuple[date, float]] = []
-    ruin_point: tuple[date, float] | None = None
-    for day, marked in series:
-        solvent.append((day, marked))
-        if marked <= 0.0:
-            ruin_point = (day, marked)
-            break
-    if ruin_point is None:
-        raise SystemExit("expected the compounded path to cross zero")
-    drawdown = max_drawdown(solvent, EQUITY, f"{first.isoformat()} 开盘前")
-    ruin_row = next(row for row in daily_out if row["date"] == ruin_point[0].isoformat())
-    ruin = {
-        "date": ruin_point[0].isoformat(),
-        "wealth": ruin_point[1],
-        "pnl": float(ruin_row["pnl"]),
-        "return": float(ruin_row["r_t"]),
-        "peak_date": drawdown["peak_date"],
-        "peak_wealth": drawdown["peak_wealth"],
+    drawdown = max_drawdown(series, EQUITY, f"{first.isoformat()} 开盘前")
+    march_row = invested_rows[date(2024, 3, 26)]
+    march = {
+        "return": march_row["return"],
+        "pnl": march_row["pnl"],
+        "long_pnl": march_row["long_pnl"],
+        "no_pnl": march_row["no_pnl"],
     }
+    if not -0.55 <= march["return"] <= -0.45:
+        raise SystemExit(f"2024-03-26 return {march['return']:.4f} is not about -49.5%")
+    outside_count = sum(len(row["outside"]) for row in invested_rows.values())
+    over_one = [
+        {"date": day.isoformat(), "return": row["return"]}
+        for day, row in invested_rows.items()
+        if abs(row["return"]) > 1.0
+    ]
+    losers = [item for item in over_one if item["return"] < -1.0]
+    if losers:
+        print("days with r < -1", losers[:10], flush=True)
+        if outside_count == 0:
+            raise SystemExit("a day lost more than 100% without a price outside [0, 1]")
     year_rows = []
     for year in YEARS:
         invested_n = sum(day.year == year for day in invested_dates)
@@ -605,15 +633,11 @@ def main() -> int:
         )
     write_csv(DAILY_PATH, daily_out)
     write_csv(YEAR_PATH, year_rows)
-    chart_days = [day for day, _wealth in solvent]
-    chart_wealth = [value for _day, value in solvent]
-    chart_dd = []
-    running_peak = EQUITY
-    for value in chart_wealth:
-        if value > running_peak and value > 0.0:
-            running_peak = value
-        chart_dd.append(value / running_peak - 1.0)
-    chart_ok = save_chart(chart_days, chart_wealth, chart_dd)
+    chart_ok = save_chart(
+        [day for day, _wealth in series],
+        [value for _day, value in series],
+        [float(row["drawdown"]) for row in daily_out],
+    )
     display_years = []
     for row in year_rows:
         if row["in_window"] != "1":
@@ -661,14 +685,16 @@ def main() -> int:
             display_years,
             dropped,
             chart_ok,
-            ruin,
+            march,
+            outside_count,
+            over_one,
         ),
         encoding="utf-8",
     )
     print(f"wrote {REPORT}", flush=True)
     print(
-        f"pnl {view_b['total_pnl']:.2f} ruin {ruin['date']} {ruin['wealth']:.2f} "
-        f"mdd {drawdown['max_drawdown']:.4f} dropped {len(dropped)}",
+        f"ending {view_b['ending_wealth']:.2f} march {march['return']:.4f} "
+        f"mdd {drawdown['max_drawdown']:.4f} dropped {len(dropped)} outside {outside_count}",
         flush=True,
     )
     return 0
