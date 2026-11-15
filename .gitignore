@@ -61,6 +61,10 @@ outputs/**
 !outputs/strategy/hlz_cross_section/category12_class_counts.csv
 !outputs/strategy/hlz_cross_section/STEP3_SCENARIOS.md
 !outputs/strategy/hlz_cross_section/step3_scenarios.csv
+!outputs/strategy/hlz_cross_section/STEP3_5_PERFORMANCE.md
+!outputs/strategy/hlz_cross_section/step3_5_daily.csv
+!outputs/strategy/hlz_cross_section/step3_5_by_year.csv
+!outputs/strategy/hlz_cross_section/step3_5_wealth.png
 backups/
 snapshots/
 data/market_data/
