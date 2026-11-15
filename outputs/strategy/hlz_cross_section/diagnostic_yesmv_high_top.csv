@@ -1,0 +1,41 @@
+leg,rank_by_contribution,date,market_id,question,category,p_form,oi_shares,yesmv,p_end_source,return_cents,mean_weight,contribution_to_leg_mean_cents
+high,1,2023-11-18,252598,Israel and Hamas ceasefire in 2023?,Politics,0.400000,33536.8096,13414.7238,next_close,37.000003,0.00113122,0.041855
+high,2,2023-03-12,249131,Will uninsured SVB depositors get all their money back by June 30?,Finance,0.670000,14267.6614,9559.3331,next_close,31.000000,0.00113122,0.035068
+high,3,2023-11-21,253127,Sam back as CEO of OpenAI?,Tech,0.675000,87622.1077,59144.9412,next_close,28.999979,0.00113122,0.032805
+high,4,2023-07-21,251807,Will 'Barbie' gross over $150m on opening weekend?,Culture,0.660000,51274.8137,33841.3771,next_close,28.000000,0.00113122,0.031674
+high,5,2023-11-20,252839,Israel and Hamas ceasefire by Nov 30?,Politics,0.560000,27317.6417,15297.8794,next_close,26.999922,0.00113122,0.030543
+high,6,2024-04-21,500460,Will another player win FIDE Candidates 2024?,Sports,0.440000,21435.8356,9431.7677,settlement,56.000000,0.00054392,0.030459
+high,7,2024-03-09,255225,Will there be a US government shutdown by Mar 23?,Politics,0.680000,16516.6552,11231.3255,next_close,25.600000,0.00113122,0.028959
+high,8,2023-10-27,252682,Will Israel launch a major ground offensive in Gaza by Oct 31?,Politics,0.650000,50352.6242,32729.2059,next_close,22.500000,0.00113122,0.025452
+high,9,2023-05-28,251224,Will Tom Wambsgans be CEO at the end of Succession S4?,Finance,0.830000,11070.0390,9188.1324,settlement,17.000000,0.00113122,0.019231
+high,10,2023-08-24,251935,Trump mugshot by Sep 1?,Politics,0.830000,37416.1245,31055.3853,settlement,16.999995,0.00113122,0.019231
+high,11,2024-05-20,253750,Ethereum ETF approved by May 31?,Crypto,0.200000,2121881.6328,424376.3266,next_close,47.000004,0.00036775,0.017284
+high,12,2023-11-30,252626,Did Israeli intelligence have advanced knowledge of the Attack?,Politics,0.125000,68210.2346,8526.2793,next_close,14.700000,0.00113122,0.016629
+high,13,2023-03-22,249274,$ARB above $1 one week after launch?,Crypto,0.650000,187323.7241,121760.4229,next_close,12.999999,0.00113122,0.014706
+high,14,2024-05-08,501369,Will Elon tweet 75-89 times?,Tech,0.520000,20231.0912,10520.1674,next_close,21.000000,0.00054156,0.011373
+high,15,2024-04-16,254204,Will Man City win the 2023-24 Champions League?,Sports,0.350000,67594.4325,23658.0518,next_close,9.999997,0.00113122,0.011312
+high,16,2024-05-12,501518,Will Elon tweet less than 60 times?,Culture,0.056000,24531.4401,1373.7606,next_close,11.399999,0.00095971,0.010941
+high,17,2023-10-12,252604,Israeli troops on the ground in Gaza by the end of this week?,Politics,0.280000,11903.3934,3332.9501,next_close,62.000000,0.00017335,0.010747
+high,18,2023-05-27,248596,Will Erdoğan win the 2023 Turkish presidential election?,Politics,0.906000,1540638.1543,1395818.1300,next_close,9.300002,0.00113122,0.010520
+high,19,2024-01-12,253576,Who will get more votes in Taiwan Election: Hou Yu-ih (侯友宜) or Ko Wen-je (柯文哲)?,Politics,0.520000,403306.4447,209719.3513,settlement,48.000000,0.00021274,0.010211
+high,20,2023-12-05,252626,Did Israeli intelligence have advanced knowledge of the Attack?,Politics,0.350000,114004.5820,39901.6037,next_close,8.300000,0.00113122,0.009389
+low,1,2023-03-12,249130,Will another US bank fail in March?,Finance,0.320000,915.7126,293.0281,settlement,67.999999,0.00113122,0.076923
+low,2,2024-03-08,254128,US government shutdown by Mar 9?,Politics,0.120000,30413.3073,3649.5980,next_close,81.099996,0.00078039,0.063290
+low,3,2023-11-20,253105,Will Hamas release 20+ hostages in a single day by Nov 30?,Politics,0.290002,5233.7170,1517.7869,next_close,33.999830,0.00113122,0.038461
+low,4,2023-11-30,253216,Will Israel launch a major ground offensive in South Gaza by Dec 8?,Politics,0.300000,6033.8077,1810.1423,next_close,31.000000,0.00113122,0.035068
+low,5,2023-10-31,252663,Will Egypt open its border for Palestinian refugees by Nov 1?,Politics,0.600000,4545.5395,2727.3237,next_close,25.300000,0.00113122,0.028620
+low,6,2023-05-24,251046,Turkish 2nd round turnout over 87%?,Politics,0.250000,1728.9618,432.2404,next_close,25.000000,0.00113122,0.028281
+low,7,2023-12-11,253366,Will Israel start flooding Hamas tunnels by December 15?,Politics,0.120000,2939.0475,352.6857,next_close,86.000000,0.00030768,0.026461
+low,8,2024-04-12,500890,U.S. military action against Iran by April 15?,Politics,0.005000,2505.5263,12.5276,next_close,23.500000,0.00111276,0.026150
+low,9,2023-12-30,252665,Will Hezbollah officially join the war in 2023?,Politics,0.010000,21204.0324,212.0403,next_close,21.000000,0.00113122,0.023756
+low,10,2023-07-21,251827,Will 'Barbie' gross 2x more than 'Oppenheimer' on opening weekend?,Culture,0.510000,6385.7137,3256.7141,next_close,18.999998,0.00113122,0.021493
+low,11,2023-11-23,252626,Did Israeli intelligence have advanced knowledge of the Attack?,Politics,0.100000,63609.2789,6360.9279,next_close,17.000000,0.00113122,0.019231
+low,12,2024-02-05,254202,Nikki Haley wins >50% of the vote in Nevada Republican primary?,Politics,0.080000,32320.8664,2585.6693,next_close,13.000000,0.00113122,0.014706
+low,13,2023-11-21,253126,Ilya still at OpenAI on Jan 1?,Tech,0.810000,7661.4472,6205.7722,next_close,11.100000,0.00113122,0.012557
+low,14,2023-10-14,252657,Will Egypt open its border for Palestinian refugees by Oct 20?,Politics,0.140000,1249.3998,174.9160,next_close,10.999997,0.00113122,0.012443
+low,15,2024-03-05,255229,Will Bitcoin hit $100k in 2024?,Crypto,0.400000,9790.1553,3916.0621,next_close,12.000000,0.00102764,0.012332
+low,16,2023-10-12,252583,Will Hezbollah deploy ground forces in Israel by Oct 14?,Politics,0.050000,16249.0067,812.4503,next_close,13.000000,0.00081237,0.010561
+low,17,2024-01-01,253519,"Will BTC hit $50,000 by Jan 31?",Crypto,0.380000,8151.6903,3097.6423,next_close,10.000000,0.00105277,0.010528
+low,18,2023-06-28,251319,Will Trump be indicted a third time by August 31?,Politics,0.790000,13191.0020,10420.8916,next_close,8.999951,0.00100777,0.009070
+low,19,2024-05-19,501657,"Bitcoin above $65,000 on May 24?",Crypto,0.660000,2045.9585,1350.3326,next_close,15.000000,0.00060122,0.009018
+low,20,2024-05-05,501274,"Will Bitcoin reach $65,000 in May?",Crypto,0.889999,10310.6136,9176.4400,settlement,11.000059,0.00074467,0.008191

@@ -1,0 +1,87 @@
+{
+  "generated_at": "2026-11-08T16:11:43Z",
+  "scope": "verified_pilot_not_full_sample",
+  "invalid_prior_run": "commit 60f85fb used a post-formation /v2/oi snapshot and is not for inference",
+  "start_date": "2024-10-30",
+  "end_date": "2024-11-05",
+  "n_fills": 3599162,
+  "n_conditions": 25,
+  "price_source": "vgregoire_ohlcv_1h_close",
+  "n_conditions_with_hourly_price": 25,
+  "max_conditions": 25,
+  "block_time_max_abs_error_seconds": 38.0,
+  "n_factor_rows": 160,
+  "n_portfolio_rows": 150,
+  "reasons": {
+    "alive_contract_days": 160,
+    "portfolio_sample": 150,
+    "no_trade_at_or_before_formation": 6,
+    "already_expired": 15,
+    "block_time_max_abs_error_seconds": 38
+  },
+  "spreads": [
+    {
+      "characteristic": "yesmv",
+      "n_dates": 7,
+      "mean_low_cents": "-1.862783",
+      "mean_middle_cents": "1.558631",
+      "mean_high_cents": "-0.798330",
+      "mean_high_minus_low_cents": "1.064453",
+      "scope": "verified_pilot_not_full_sample"
+    },
+    {
+      "characteristic": "lor_1",
+      "n_dates": 6,
+      "mean_low_cents": "-1.047411",
+      "mean_middle_cents": "-0.409931",
+      "mean_high_cents": "2.330799",
+      "mean_high_minus_low_cents": "3.378210",
+      "scope": "verified_pilot_not_full_sample"
+    },
+    {
+      "characteristic": "lor_2",
+      "n_dates": 7,
+      "mean_low_cents": "-1.393162",
+      "mean_middle_cents": "0.258017",
+      "mean_high_cents": "1.467112",
+      "mean_high_minus_low_cents": "2.860274",
+      "scope": "verified_pilot_not_full_sample"
+    },
+    {
+      "characteristic": "lor_3",
+      "n_dates": 7,
+      "mean_low_cents": "-1.875338",
+      "mean_middle_cents": "0.255161",
+      "mean_high_cents": "1.817328",
+      "mean_high_minus_low_cents": "3.692667",
+      "scope": "verified_pilot_not_full_sample"
+    },
+    {
+      "characteristic": "lor_4",
+      "n_dates": 6,
+      "mean_low_cents": "-1.631212",
+      "mean_middle_cents": "0.370440",
+      "mean_high_cents": "2.130411",
+      "mean_high_minus_low_cents": "3.761623",
+      "scope": "verified_pilot_not_full_sample"
+    },
+    {
+      "characteristic": "lor_5",
+      "n_dates": 7,
+      "mean_low_cents": "-0.849775",
+      "mean_middle_cents": "0.319254",
+      "mean_high_cents": "0.806533",
+      "mean_high_minus_low_cents": "1.656308",
+      "scope": "verified_pilot_not_full_sample"
+    },
+    {
+      "characteristic": "lor_6",
+      "n_dates": 6,
+      "mean_low_cents": "-1.016325",
+      "mean_middle_cents": "0.369670",
+      "mean_high_cents": "0.935769",
+      "mean_high_minus_low_cents": "1.952094",
+      "scope": "verified_pilot_not_full_sample"
+    }
+  ]
+}

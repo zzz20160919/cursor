@@ -1,0 +1,13 @@
+stat,value
+portfolio_contract_days,379371
+median_oi,52906.8528
+p90_oi,951500.5970
+p99_oi,5414242.5960
+max_oi,226234526.3670
+share_of_summed_oi_top_1pct_contract_days,0.420364
+share_of_summed_oi_top_10pct_contract_days,0.754390
+unique_portfolio_contracts,73162
+share_of_mean_oi_top_1pct_contracts,0.441010
+share_of_mean_oi_top_10pct_contracts,0.786140
+harris_2024_10_30_oi,118579214.2805
+harris_2024_10_30_yesmv,40198353.6411

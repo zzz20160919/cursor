@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-11-07T16:21:34Z",
+  "sample_end_date": "2026-11-07",
+  "sample_end_note": "Opening date (UTC calendar date) must fall on or before sample_end_date. The default is the UTC date of the run. April 28, 2026 is the Hou\u2013Li\u2013Zheng Kalshi archive cutoff and is left unset unless --end-date passes it.",
+  "min_volume": 10000.0,
+  "min_life_days": 2.0,
+  "volume_definition": "cumulative_volume is Gamma volumeNum when that field is present, otherwise volume. The paper threshold of 10,000 counts Kalshi contracts. Polymarket volumeNum/volume is lifetime size and is typically USD notional, not a contract count. volume_unit in the CSV is usd_notional.",
+  "life_definition": "scheduled_life_days = (expiry - opening timestamp) in days of 86400 seconds. Opening prefers startDate, startDateIso, event.startDate, then createdAt, event.createdAt, event.creationDate. Expiry prefers endDate, endDateIso, event.endDate, event.endDateIso. closedTime and gameStartTime are not used.",
+  "unit_of_analysis": "One binary market (exactly two outcomes) is one contract, including siblings in the same event. Open and closed markets are both eligible.",
+  "not_inclusion_rules": [
+    "trailing 7-day average volume",
+    "days to expiry on a trade date",
+    "YES price in [0.10, 0.90]",
+    "one market per event",
+    "cash day when fewer than 10 markets pass"
+  ],
+  "n_contracts": 277481,
+  "n_events": 128063,
+  "n_open_contracts": 5862,
+  "n_closed_contracts": 271619,
+  "n_contracts_without_event": 2,
+  "n_fetched_unique": 493855,
+  "funnel": {
+    "missing_id": 0,
+    "below_volume": 0,
+    "non_binary": 30,
+    "missing_open": 0,
+    "missing_expiry": 608,
+    "life_below_min": 215736,
+    "opened_after_cutoff": 0,
+    "selected": 277481
+  },
+  "coverage": {
+    "raw_rows": 493873,
+    "unique_markets": 493855,
+    "boundary_duplicates": 18,
+    "open_observed": 5907,
+    "closed_observed": 487948,
+    "open_volume_min": 10006.898478000001,
+    "open_volume_max": 78339602.612095,
+    "closed_volume_min": 10000.0,
+    "closed_volume_max": 1531479284.504353
+  },
+  "volume_stats": {
+    "min": 10000.0,
+    "median": 37856.586772,
+    "mean": 327626.186820088,
+    "p90": 408387.798895,
+    "max": 1531479284.504353
+  },
+  "incomplete": false,
+  "paging": {
+    "endpoint": "/markets/keyset",
+    "order": "volumeNum",
+    "volume_num_min": 10000.0,
+    "closed_values": [
+      "false",
+      "true"
+    ],
+    "bands": 132,
+    "fetched_rows_including_band_edges": 493873,
+    "cached_bands": 2,
+    "elapsed_seconds": 280.8,
+    "note": "Offset paging fails above 2000. order=volume_num is rejected; the JSON field is volumeNum. Bands overlap on the boundary and market ids are deduped. volume1wk is not a stop rule. A live check on 2026-11-07 found the archived query parameter ignored, so closed markets are whatever closed=true returns."
+  },
+  "output": "outputs/strategy/hlz_cross_section/paper_sample_markets.csv",
+  "summary": "outputs/strategy/hlz_cross_section/SUMMARY.md"
+}

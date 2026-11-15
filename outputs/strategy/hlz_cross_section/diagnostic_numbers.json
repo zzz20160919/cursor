@@ -1,0 +1,623 @@
+{
+  "funnel": [
+    {
+      "stage": "hourly_close_any_contract_day",
+      "contract_days": 737834,
+      "share_of_paper_raw": "0.210377",
+      "share_of_paper_portfolio": "0.821624"
+    },
+    {
+      "stage": "alive_and_close_within_2h",
+      "contract_days": 679124,
+      "share_of_paper_raw": "0.193637",
+      "share_of_paper_portfolio": "0.756247"
+    },
+    {
+      "stage": "alive_close_with_oi_observation",
+      "contract_days": 679124,
+      "share_of_paper_raw": "0.193637",
+      "share_of_paper_portfolio": "0.756247"
+    },
+    {
+      "stage": "alive_close_positive_oi",
+      "contract_days": 678884,
+      "share_of_paper_raw": "0.193569",
+      "share_of_paper_portfolio": "0.755980"
+    },
+    {
+      "stage": "plus_trade_in_prior_7_calendar_days",
+      "contract_days": 633856,
+      "share_of_paper_raw": "0.180730",
+      "share_of_paper_portfolio": "0.705838"
+    },
+    {
+      "stage": "plus_nonempty_category",
+      "contract_days": 633856,
+      "share_of_paper_raw": "0.180730",
+      "share_of_paper_portfolio": "0.705838"
+    },
+    {
+      "stage": "plus_next_period_price_portfolio",
+      "contract_days": 379371,
+      "share_of_paper_raw": "0.108169",
+      "share_of_paper_portfolio": "0.422453"
+    },
+    {
+      "stage": "portfolio_on_dates_with_hourly_file",
+      "contract_days": 379371,
+      "share_of_paper_raw": "0.108169",
+      "share_of_paper_portfolio": "0.422453"
+    },
+    {
+      "stage": "portfolio_dates",
+      "contract_days": 1120,
+      "share_of_paper_raw": "",
+      "share_of_paper_portfolio": ""
+    }
+  ],
+  "price_age": [
+    {
+      "bucket": "stale_close_1d_to_7d",
+      "contract_days": 863172,
+      "universe": "alive_with_reference_token"
+    },
+    {
+      "bucket": "no_hourly_close_before_formation",
+      "contract_days": 789137,
+      "universe": "alive_with_reference_token"
+    },
+    {
+      "bucket": "close_within_2h",
+      "contract_days": 679124,
+      "universe": "alive_with_reference_token"
+    },
+    {
+      "bucket": "stale_close_6h_to_24h",
+      "contract_days": 612777,
+      "universe": "alive_with_reference_token"
+    },
+    {
+      "bucket": "stale_close_2h_to_6h",
+      "contract_days": 459625,
+      "universe": "alive_with_reference_token"
+    },
+    {
+      "bucket": "stale_close_older_than_7d",
+      "contract_days": 428424,
+      "universe": "alive_with_reference_token"
+    },
+    {
+      "bucket": "missing_hourly_file_date",
+      "contract_days": 732,
+      "universe": "alive_with_reference_token"
+    },
+    {
+      "bucket": "alive_without_reference_token",
+      "contract_days": 49846,
+      "universe": "alive_minus_token"
+    },
+    {
+      "bucket": "alive_all_contracts",
+      "contract_days": 3882837,
+      "universe": "alive"
+    }
+  ],
+  "oi": [
+    {
+      "stat": "portfolio_contract_days",
+      "value": "379371"
+    },
+    {
+      "stat": "median_oi",
+      "value": "52906.8528"
+    },
+    {
+      "stat": "p90_oi",
+      "value": "951500.5970"
+    },
+    {
+      "stat": "p99_oi",
+      "value": "5414242.5960"
+    },
+    {
+      "stat": "max_oi",
+      "value": "226234526.3670"
+    },
+    {
+      "stat": "share_of_summed_oi_top_1pct_contract_days",
+      "value": "0.420364"
+    },
+    {
+      "stat": "share_of_summed_oi_top_10pct_contract_days",
+      "value": "0.754390"
+    },
+    {
+      "stat": "unique_portfolio_contracts",
+      "value": "73162"
+    },
+    {
+      "stat": "share_of_mean_oi_top_1pct_contracts",
+      "value": "0.441010"
+    },
+    {
+      "stat": "share_of_mean_oi_top_10pct_contracts",
+      "value": "0.786140"
+    },
+    {
+      "stat": "harris_2024_10_30_oi",
+      "value": "118579214.2805"
+    },
+    {
+      "stat": "harris_2024_10_30_yesmv",
+      "value": "40198353.6411"
+    }
+  ],
+  "category_summary": [
+    {
+      "stat": "portfolio_dates",
+      "value": "1120"
+    },
+    {
+      "stat": "mean_categories_per_day",
+      "value": "5.0679"
+    },
+    {
+      "stat": "median_categories_per_day",
+      "value": "7.0000"
+    },
+    {
+      "stat": "min_categories_per_day",
+      "value": "1"
+    },
+    {
+      "stat": "max_categories_per_day",
+      "value": "7"
+    },
+    {
+      "stat": "mean_portfolio_contracts_per_day",
+      "value": "338.7241"
+    },
+    {
+      "stat": "mean_contracts_per_category_day",
+      "value": "66.8377"
+    },
+    {
+      "stat": "median_contracts_per_category_day",
+      "value": "25.0000"
+    },
+    {
+      "stat": "category_days_with_fewer_than_3_contracts",
+      "value": "1014"
+    },
+    {
+      "stat": "priced_days_blank_category",
+      "value": "0"
+    },
+    {
+      "stat": "priced_days",
+      "value": "737834"
+    },
+    {
+      "stat": "blank_share_of_priced_days",
+      "value": "0.000000"
+    },
+    {
+      "stat": "active_priced_days_blank_category",
+      "value": "0"
+    }
+  ],
+  "spreads": [
+    {
+      "scheme": "aligned_raw_oi",
+      "characteristic": "yesmv",
+      "n_dates": 884,
+      "mean_low_cents": "0.073974",
+      "mean_middle_cents": "-0.164420",
+      "mean_high_cents": "0.282845",
+      "mean_high_minus_low_cents": "0.208871",
+      "newey_west_t_lag7": "1.0322",
+      "paper_ia15_high_minus_low_cents": "-0.255",
+      "paper_ia15_t": "-5.81"
+    },
+    {
+      "scheme": "aligned_raw_oi",
+      "characteristic": "lor_1",
+      "n_dates": 755,
+      "mean_low_cents": "0.249958",
+      "mean_middle_cents": "0.133226",
+      "mean_high_cents": "0.163820",
+      "mean_high_minus_low_cents": "-0.086138",
+      "newey_west_t_lag7": "-0.4225",
+      "paper_ia15_high_minus_low_cents": "-0.725",
+      "paper_ia15_t": "-5.29"
+    },
+    {
+      "scheme": "aligned_raw_oi",
+      "characteristic": "lor_2",
+      "n_dates": 729,
+      "mean_low_cents": "0.192687",
+      "mean_middle_cents": "-0.076977",
+      "mean_high_cents": "-0.036119",
+      "mean_high_minus_low_cents": "-0.228806",
+      "newey_west_t_lag7": "-0.9581",
+      "paper_ia15_high_minus_low_cents": "-0.603",
+      "paper_ia15_t": "-4.39"
+    },
+    {
+      "scheme": "aligned_raw_oi",
+      "characteristic": "lor_3",
+      "n_dates": 730,
+      "mean_low_cents": "0.093831",
+      "mean_middle_cents": "-0.089580",
+      "mean_high_cents": "0.088509",
+      "mean_high_minus_low_cents": "-0.005322",
+      "newey_west_t_lag7": "-0.0350",
+      "paper_ia15_high_minus_low_cents": "-0.538",
+      "paper_ia15_t": "-4.22"
+    },
+    {
+      "scheme": "aligned_raw_oi",
+      "characteristic": "lor_4",
+      "n_dates": 722,
+      "mean_low_cents": "0.026324",
+      "mean_middle_cents": "0.000144",
+      "mean_high_cents": "0.116589",
+      "mean_high_minus_low_cents": "0.090265",
+      "newey_west_t_lag7": "0.5481",
+      "paper_ia15_high_minus_low_cents": "-0.553",
+      "paper_ia15_t": "-4.40"
+    },
+    {
+      "scheme": "aligned_raw_oi",
+      "characteristic": "lor_5",
+      "n_dates": 717,
+      "mean_low_cents": "-0.024112",
+      "mean_middle_cents": "-0.055715",
+      "mean_high_cents": "-0.013373",
+      "mean_high_minus_low_cents": "0.010740",
+      "newey_west_t_lag7": "0.0723",
+      "paper_ia15_high_minus_low_cents": "-0.566",
+      "paper_ia15_t": "-4.87"
+    },
+    {
+      "scheme": "aligned_raw_oi",
+      "characteristic": "lor_6",
+      "n_dates": 710,
+      "mean_low_cents": "0.040182",
+      "mean_middle_cents": "-0.075489",
+      "mean_high_cents": "0.029148",
+      "mean_high_minus_low_cents": "-0.011034",
+      "newey_west_t_lag7": "-0.0831",
+      "paper_ia15_high_minus_low_cents": "-0.501",
+      "paper_ia15_t": "-3.96"
+    },
+    {
+      "scheme": "aligned_oi_capped_at_date_p99",
+      "characteristic": "yesmv",
+      "n_dates": 884,
+      "mean_low_cents": "0.072550",
+      "mean_middle_cents": "-0.166957",
+      "mean_high_cents": "0.284998",
+      "mean_high_minus_low_cents": "0.212449",
+      "newey_west_t_lag7": "1.0515",
+      "paper_ia15_high_minus_low_cents": "-0.255",
+      "paper_ia15_t": "-5.81"
+    },
+    {
+      "scheme": "aligned_oi_capped_at_date_p99",
+      "characteristic": "lor_1",
+      "n_dates": 755,
+      "mean_low_cents": "0.254112",
+      "mean_middle_cents": "0.126771",
+      "mean_high_cents": "0.163594",
+      "mean_high_minus_low_cents": "-0.090517",
+      "newey_west_t_lag7": "-0.4502",
+      "paper_ia15_high_minus_low_cents": "-0.725",
+      "paper_ia15_t": "-5.29"
+    },
+    {
+      "scheme": "aligned_oi_capped_at_date_p99",
+      "characteristic": "lor_2",
+      "n_dates": 729,
+      "mean_low_cents": "0.190751",
+      "mean_middle_cents": "-0.089951",
+      "mean_high_cents": "-0.039000",
+      "mean_high_minus_low_cents": "-0.229752",
+      "newey_west_t_lag7": "-0.9652",
+      "paper_ia15_high_minus_low_cents": "-0.603",
+      "paper_ia15_t": "-4.39"
+    },
+    {
+      "scheme": "aligned_oi_capped_at_date_p99",
+      "characteristic": "lor_3",
+      "n_dates": 730,
+      "mean_low_cents": "0.095278",
+      "mean_middle_cents": "-0.086879",
+      "mean_high_cents": "0.079449",
+      "mean_high_minus_low_cents": "-0.015830",
+      "newey_west_t_lag7": "-0.1077",
+      "paper_ia15_high_minus_low_cents": "-0.538",
+      "paper_ia15_t": "-4.22"
+    },
+    {
+      "scheme": "aligned_oi_capped_at_date_p99",
+      "characteristic": "lor_4",
+      "n_dates": 722,
+      "mean_low_cents": "0.024262",
+      "mean_middle_cents": "0.000755",
+      "mean_high_cents": "0.113205",
+      "mean_high_minus_low_cents": "0.088943",
+      "newey_west_t_lag7": "0.5522",
+      "paper_ia15_high_minus_low_cents": "-0.553",
+      "paper_ia15_t": "-4.40"
+    },
+    {
+      "scheme": "aligned_oi_capped_at_date_p99",
+      "characteristic": "lor_5",
+      "n_dates": 717,
+      "mean_low_cents": "-0.022519",
+      "mean_middle_cents": "-0.060451",
+      "mean_high_cents": "-0.026526",
+      "mean_high_minus_low_cents": "-0.004007",
+      "newey_west_t_lag7": "-0.0279",
+      "paper_ia15_high_minus_low_cents": "-0.566",
+      "paper_ia15_t": "-4.87"
+    },
+    {
+      "scheme": "aligned_oi_capped_at_date_p99",
+      "characteristic": "lor_6",
+      "n_dates": 710,
+      "mean_low_cents": "0.049692",
+      "mean_middle_cents": "-0.071875",
+      "mean_high_cents": "0.021910",
+      "mean_high_minus_low_cents": "-0.027782",
+      "newey_west_t_lag7": "-0.2174",
+      "paper_ia15_high_minus_low_cents": "-0.501",
+      "paper_ia15_t": "-3.96"
+    },
+    {
+      "scheme": "aligned_drop_oi_above_date_p99",
+      "characteristic": "yesmv",
+      "n_dates": 846,
+      "mean_low_cents": "0.037394",
+      "mean_middle_cents": "-0.023521",
+      "mean_high_cents": "0.140097",
+      "mean_high_minus_low_cents": "0.102703",
+      "newey_west_t_lag7": "0.5306",
+      "paper_ia15_high_minus_low_cents": "-0.255",
+      "paper_ia15_t": "-5.81"
+    },
+    {
+      "scheme": "aligned_drop_oi_above_date_p99",
+      "characteristic": "lor_1",
+      "n_dates": 729,
+      "mean_low_cents": "0.434255",
+      "mean_middle_cents": "0.235872",
+      "mean_high_cents": "0.199801",
+      "mean_high_minus_low_cents": "-0.234454",
+      "newey_west_t_lag7": "-1.4090",
+      "paper_ia15_high_minus_low_cents": "-0.725",
+      "paper_ia15_t": "-5.29"
+    },
+    {
+      "scheme": "aligned_drop_oi_above_date_p99",
+      "characteristic": "lor_2",
+      "n_dates": 715,
+      "mean_low_cents": "0.310797",
+      "mean_middle_cents": "-0.029191",
+      "mean_high_cents": "-0.198395",
+      "mean_high_minus_low_cents": "-0.509192",
+      "newey_west_t_lag7": "-2.4910",
+      "paper_ia15_high_minus_low_cents": "-0.603",
+      "paper_ia15_t": "-4.39"
+    },
+    {
+      "scheme": "aligned_drop_oi_above_date_p99",
+      "characteristic": "lor_3",
+      "n_dates": 718,
+      "mean_low_cents": "0.092829",
+      "mean_middle_cents": "-0.162304",
+      "mean_high_cents": "-0.001730",
+      "mean_high_minus_low_cents": "-0.094559",
+      "newey_west_t_lag7": "-0.7957",
+      "paper_ia15_high_minus_low_cents": "-0.538",
+      "paper_ia15_t": "-4.22"
+    },
+    {
+      "scheme": "aligned_drop_oi_above_date_p99",
+      "characteristic": "lor_4",
+      "n_dates": 704,
+      "mean_low_cents": "0.090063",
+      "mean_middle_cents": "0.045792",
+      "mean_high_cents": "0.056329",
+      "mean_high_minus_low_cents": "-0.033735",
+      "newey_west_t_lag7": "-0.2188",
+      "paper_ia15_high_minus_low_cents": "-0.553",
+      "paper_ia15_t": "-4.40"
+    },
+    {
+      "scheme": "aligned_drop_oi_above_date_p99",
+      "characteristic": "lor_5",
+      "n_dates": 700,
+      "mean_low_cents": "0.115361",
+      "mean_middle_cents": "0.049617",
+      "mean_high_cents": "-0.024756",
+      "mean_high_minus_low_cents": "-0.140117",
+      "newey_west_t_lag7": "-1.1720",
+      "paper_ia15_high_minus_low_cents": "-0.566",
+      "paper_ia15_t": "-4.87"
+    },
+    {
+      "scheme": "aligned_drop_oi_above_date_p99",
+      "characteristic": "lor_6",
+      "n_dates": 697,
+      "mean_low_cents": "0.150958",
+      "mean_middle_cents": "-0.061935",
+      "mean_high_cents": "-0.047810",
+      "mean_high_minus_low_cents": "-0.198769",
+      "newey_west_t_lag7": "-1.8520",
+      "paper_ia15_high_minus_low_cents": "-0.501",
+      "paper_ia15_t": "-3.96"
+    },
+    {
+      "scheme": "aligned_equal_weight",
+      "characteristic": "yesmv",
+      "n_dates": 884,
+      "mean_low_cents": "0.131324",
+      "mean_middle_cents": "-0.172601",
+      "mean_high_cents": "0.295489",
+      "mean_high_minus_low_cents": "0.164166",
+      "newey_west_t_lag7": "0.7838",
+      "paper_ia15_high_minus_low_cents": "-0.255",
+      "paper_ia15_t": "-5.81"
+    },
+    {
+      "scheme": "aligned_equal_weight",
+      "characteristic": "lor_1",
+      "n_dates": 755,
+      "mean_low_cents": "0.462139",
+      "mean_middle_cents": "0.190261",
+      "mean_high_cents": "0.079143",
+      "mean_high_minus_low_cents": "-0.382996",
+      "newey_west_t_lag7": "-1.7311",
+      "paper_ia15_high_minus_low_cents": "-0.725",
+      "paper_ia15_t": "-5.29"
+    },
+    {
+      "scheme": "aligned_equal_weight",
+      "characteristic": "lor_2",
+      "n_dates": 729,
+      "mean_low_cents": "0.342635",
+      "mean_middle_cents": "-0.039002",
+      "mean_high_cents": "-0.157905",
+      "mean_high_minus_low_cents": "-0.500540",
+      "newey_west_t_lag7": "-2.2297",
+      "paper_ia15_high_minus_low_cents": "-0.603",
+      "paper_ia15_t": "-4.39"
+    },
+    {
+      "scheme": "aligned_equal_weight",
+      "characteristic": "lor_3",
+      "n_dates": 730,
+      "mean_low_cents": "0.241164",
+      "mean_middle_cents": "-0.054876",
+      "mean_high_cents": "-0.012457",
+      "mean_high_minus_low_cents": "-0.253621",
+      "newey_west_t_lag7": "-1.6892",
+      "paper_ia15_high_minus_low_cents": "-0.538",
+      "paper_ia15_t": "-4.22"
+    },
+    {
+      "scheme": "aligned_equal_weight",
+      "characteristic": "lor_4",
+      "n_dates": 722,
+      "mean_low_cents": "0.133422",
+      "mean_middle_cents": "0.072017",
+      "mean_high_cents": "0.103370",
+      "mean_high_minus_low_cents": "-0.030053",
+      "newey_west_t_lag7": "-0.1826",
+      "paper_ia15_high_minus_low_cents": "-0.553",
+      "paper_ia15_t": "-4.40"
+    },
+    {
+      "scheme": "aligned_equal_weight",
+      "characteristic": "lor_5",
+      "n_dates": 717,
+      "mean_low_cents": "-0.006005",
+      "mean_middle_cents": "-0.027202",
+      "mean_high_cents": "-0.050780",
+      "mean_high_minus_low_cents": "-0.044775",
+      "newey_west_t_lag7": "-0.3098",
+      "paper_ia15_high_minus_low_cents": "-0.566",
+      "paper_ia15_t": "-4.87"
+    },
+    {
+      "scheme": "aligned_equal_weight",
+      "characteristic": "lor_6",
+      "n_dates": 710,
+      "mean_low_cents": "0.184017",
+      "mean_middle_cents": "-0.071186",
+      "mean_high_cents": "-0.053584",
+      "mean_high_minus_low_cents": "-0.237602",
+      "newey_west_t_lag7": "-1.7198",
+      "paper_ia15_high_minus_low_cents": "-0.501",
+      "paper_ia15_t": "-3.96"
+    }
+  ],
+  "previous_full_sample": [
+    {
+      "characteristic": "yesmv",
+      "n_dates": "884",
+      "mean_low_cents": "0.073974",
+      "mean_middle_cents": "-0.164420",
+      "mean_high_cents": "0.282845",
+      "mean_high_minus_low_cents": "0.208871",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_1",
+      "n_dates": "755",
+      "mean_low_cents": "0.249958",
+      "mean_middle_cents": "0.133226",
+      "mean_high_cents": "0.163820",
+      "mean_high_minus_low_cents": "-0.086138",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_2",
+      "n_dates": "729",
+      "mean_low_cents": "0.192687",
+      "mean_middle_cents": "-0.076977",
+      "mean_high_cents": "-0.036119",
+      "mean_high_minus_low_cents": "-0.228806",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_3",
+      "n_dates": "730",
+      "mean_low_cents": "0.093831",
+      "mean_middle_cents": "-0.089580",
+      "mean_high_cents": "0.088509",
+      "mean_high_minus_low_cents": "-0.005322",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_4",
+      "n_dates": "722",
+      "mean_low_cents": "0.026324",
+      "mean_middle_cents": "0.000144",
+      "mean_high_cents": "0.116589",
+      "mean_high_minus_low_cents": "0.090265",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_5",
+      "n_dates": "717",
+      "mean_low_cents": "-0.024112",
+      "mean_middle_cents": "-0.055715",
+      "mean_high_cents": "-0.013373",
+      "mean_high_minus_low_cents": "0.010740",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_6",
+      "n_dates": "710",
+      "mean_low_cents": "0.040182",
+      "mean_middle_cents": "-0.075489",
+      "mean_high_cents": "0.029148",
+      "mean_high_minus_low_cents": "-0.011034",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    }
+  ],
+  "paper_portfolio_contract_days": 898019,
+  "paper_raw_contract_days": 3507194,
+  "missing_hourly_dates": [
+    "2022-11-24",
+    "2022-11-25",
+    "2022-11-26",
+    "2022-11-27",
+    "2022-12-04",
+    "2022-12-05",
+    "2022-12-10"
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "generated_at": "2026-11-09T21:05:54Z",
+  "price_source": "vgregoire_ohlcv_1h_close",
+  "max_price_age_hours": 2,
+  "sample_first_day": "2022-11-21",
+  "sample_last_day": "2026-03-29",
+  "block_time_max_error_seconds": 244.53999996185303,
+  "coverage": {
+    "universe_conditions": 178408,
+    "conditions_with_reference_token": 178025,
+    "alive_contract_days": 3882837,
+    "contract_days_with_price": 737834,
+    "active_contract_days_with_price": 679124,
+    "active_with_oi_observation": 679124,
+    "active_with_positive_oi": 678884,
+    "portfolio_sample_contract_days": 379371,
+    "conditions_with_price": 124433,
+    "first_formation_date": "2022-11-21",
+    "last_formation_date": "2026-03-29"
+  },
+  "harris": {
+    "market_id": "253597",
+    "date": "2024-10-30",
+    "oi_shares": 118579214.280515,
+    "p_form": 0.339,
+    "relative_gap": 5.0642669523127996e-14
+  },
+  "spreads": [
+    {
+      "characteristic": "yesmv",
+      "n_dates": 884,
+      "mean_low_cents": "0.073974",
+      "mean_middle_cents": "-0.164420",
+      "mean_high_cents": "0.282845",
+      "mean_high_minus_low_cents": "0.208871",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_1",
+      "n_dates": 755,
+      "mean_low_cents": "0.249958",
+      "mean_middle_cents": "0.133226",
+      "mean_high_cents": "0.163820",
+      "mean_high_minus_low_cents": "-0.086138",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_2",
+      "n_dates": 729,
+      "mean_low_cents": "0.192687",
+      "mean_middle_cents": "-0.076977",
+      "mean_high_cents": "-0.036119",
+      "mean_high_minus_low_cents": "-0.228806",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_3",
+      "n_dates": 730,
+      "mean_low_cents": "0.093831",
+      "mean_middle_cents": "-0.089580",
+      "mean_high_cents": "0.088509",
+      "mean_high_minus_low_cents": "-0.005322",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_4",
+      "n_dates": 722,
+      "mean_low_cents": "0.026324",
+      "mean_middle_cents": "0.000144",
+      "mean_high_cents": "0.116589",
+      "mean_high_minus_low_cents": "0.090265",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_5",
+      "n_dates": 717,
+      "mean_low_cents": "-0.024112",
+      "mean_middle_cents": "-0.055715",
+      "mean_high_cents": "-0.013373",
+      "mean_high_minus_low_cents": "0.010740",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    },
+    {
+      "characteristic": "lor_6",
+      "n_dates": 710,
+      "mean_low_cents": "0.040182",
+      "mean_middle_cents": "-0.075489",
+      "mean_high_cents": "0.029148",
+      "mean_high_minus_low_cents": "-0.011034",
+      "scope": "a3_full_sample_through_hourly_coverage"
+    }
+  ]
+}
